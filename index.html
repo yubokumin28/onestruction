@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>建設DX現場ボード</title>
+  <meta name="description" content="建設現場のアナログ情報を3Dモデル上で管理するDXツール" />
+  <!-- Google Fonts: 手書き風（Yomogi）とゴシック（Noto Sans JP） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Yomogi&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <!-- 全体コンテナ (コルクボード) -->
+  <div id="app" class="corkboard">
+
+    <!-- 上部ツールバー (文房具) -->
+    <header class="tools-header">
+      <div class="site-title">
+        <span class="icon">🏗️</span>
+        <h1>現場A: 施工記録ボード</h1>
+      </div>
+      <div class="tools-container">
+        <button class="tool-btn" title="定規">📏</button>
+        <button class="tool-btn" title="ペン">✏️</button>
+        <button class="tool-btn" title="計算機">🧮</button>
+      </div>
+      <button class="menu-btn">☰</button>
+    </header>
+
+    <!-- メインエリア -->
+    <main class="main-content">
+      <!-- 3Dビューア (白い紙) -->
+      <div class="paper-canvas-container">
+        <div class="tape top-left"></div>
+        <div class="tape top-right"></div>
+        <div class="tape bottom-left"></div>
+        <div class="tape bottom-right"></div>
+
+        <div id="three-canvas-container"></div>
+
+        <!-- オーバーレイUI (3D内の操作) -->
+        <div class="canvas-overlay">
+          <div class="view-controls">
+            <button class="view-btn active">全体</button>
+            <button class="view-btn">安全</button>
+            <button class="view-btn">施工</button>
+          </div>
+
+          <div class="action-bar">
+            <!-- 立体感のある白ボタンに変更 -->
+            <button id="add-issue-btn" class="action-btn white-3d">
+              <span class="icon">📷</span>
+              <span class="text handwritten">画像を追加</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ポップアップ表示エリア -->
+        <div id="popup-container"></div>
+      </div>
+
+      <!-- 右サイドバー (ノート) -->
+      <aside class="notebook-sidebar">
+        <div class="notebook-binding"></div>
+        <h2>レイヤー・属性</h2>
+        <ul class="layer-list">
+          <li><label class="handwritten"><input type="checkbox" checked> 基礎</label></li>
+          <li><label class="handwritten"><input type="checkbox" checked> 鉄骨フレーム</label></li>
+          <li><label class="handwritten"><input type="checkbox"> 空調ダクト</label></li>
+          <li><label class="handwritten"><input type="checkbox"> 電気配線</label></li>
+        </ul>
+      </aside>
+    </main>
+
+    <!-- 付箋メモ (装飾用) -->
+    <div class="sticky-note yellow note-1">
+      <div class="pin">📌</div>
+      <p class="handwritten">9:00 安全ミーティング!</p>
+    </div>
+    <div class="sticky-note pink note-2">
+      <div class="pin">📌</div>
+      <p class="handwritten">Bゾーン資材搬入確認</p>
+    </div>
+
+  </div>
+
+  <!-- 入力モーダル (非表示) -->
+  <div id="input-modal" class="modal hidden">
+    <div class="modal-content post-it-large">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">📝 指摘事項メモ</h2>
+
+      <div class="photo-area">
+        <button class="camera-btn">📷 写真を撮る</button>
+      </div>
+
+      <div class="input-area">
+        <div class="quick-tags">
+          <button class="tag">【是正】</button>
+          <button class="tag">【確認】</button>
+          <button class="tag">【KY】</button>
+          <button class="tag">【安全】</button>
+        </div>
+        <textarea placeholder="手書きメモを残す感覚で入力してください..."></textarea>
+      </div>
+
+      <div class="priority-selector">
+        <label><input type="radio" name="priority" value="high"> <span class="marker red">緊急</span></label>
+        <label><input type="radio" name="priority" value="medium" checked> <span class="marker yellow">通常</span></label>
+        <label><input type="radio" name="priority" value="low"> <span class="marker blue">低</span></label>
+      </div>
+
+      <button class="save-btn stamp-effect">保存する！</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

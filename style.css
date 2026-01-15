@@ -1,0 +1,529 @@
+:root {
+  /* Colors from design_spec.md */
+  --cork-texture: url('https://www.transparenttextures.com/patterns/cork-board.png');
+  /* Fallback/Online texture */
+  --cork-color: #D2B48C;
+  --paper-color: #FAFAFA;
+  --ink-color: #2C2C2C;
+  --primary-red: #D32F2F;
+  --sticky-yellow: #FFF9C4;
+  --sticky-pink: #F8BBD0;
+  --sticky-blue: #E3F2FD;
+
+  /* Fonts */
+  --font-hand: 'Yomogi', cursive;
+  --font-system: 'Noto Sans JP', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-system);
+  color: var(--ink-color);
+  background-color: var(--cork-color);
+  background-image: var(--cork-texture);
+  overflow: hidden;
+  /* App feel */
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Utils */
+.handwritten {
+  font-family: var(--font-hand);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* App Container */
+.corkboard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  gap: 1rem;
+  position: relative;
+}
+
+/* Header */
+.tools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.site-title h1 {
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+}
+
+.tool-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.tool-btn:hover {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Main Content */
+.main-content {
+  display: flex;
+  flex: 1;
+  gap: 2rem;
+  overflow: hidden;
+}
+
+/* 3D Viewer (Paper) */
+.paper-canvas-container {
+  flex: 3;
+  background-color: var(--paper-color);
+  position: relative;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+  transform: rotate(-1deg);
+  display: flex;
+  flex-direction: column;
+}
+
+.tape {
+  position: absolute;
+  width: 100px;
+  height: 30px;
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: rotate(45deg);
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.tape.top-left {
+  top: -10px;
+  left: -30px;
+  transform: rotate(-45deg);
+}
+
+.tape.top-right {
+  top: -10px;
+  right: -30px;
+  transform: rotate(45deg);
+}
+
+.tape.bottom-left {
+  bottom: -10px;
+  left: -30px;
+  transform: rotate(45deg);
+}
+
+.tape.bottom-right {
+  bottom: -10px;
+  right: -30px;
+  transform: rotate(-45deg);
+}
+
+#three-canvas-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  /* Fallback */
+}
+
+/* Canvas Overlay UI */
+.canvas-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+  /* Let clicks pass to canvas */
+}
+
+.canvas-overlay>* {
+  pointer-events: auto;
+}
+
+.view-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.view-btn {
+  width: 60px;
+  height: 60px;
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-weight: bold;
+  font-family: var(--font-hand);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.view-btn.active {
+  background: var(--sticky-blue);
+  border-color: #90CAF9;
+}
+
+.action-bar {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.primary-btn {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  border-radius: 8px;
+  font-family: var(--font-system);
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.primary-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar (Notebook) */
+.notebook-sidebar {
+  flex: 1;
+  background: white;
+  background-image: linear-gradient(#e1e1e1 1px, transparent 1px);
+  background-size: 100% 2rem;
+  /* Lined paper */
+  padding: 2rem 1rem 1rem 3rem;
+  /* Left padding for holes */
+  position: relative;
+  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.15);
+  transform: rotate(1deg);
+  border-radius: 0 4px 4px 0;
+  max-width: 300px;
+}
+
+.notebook-binding {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background: #333;
+  /* Simple spiral binding effect using heavy CSS is skipped for MVP */
+}
+
+.notebook-sidebar h2 {
+  font-family: var(--font-hand);
+  margin-bottom: 1.5rem;
+  text-decoration: underline;
+  text-decoration-color: var(--primary-red);
+}
+
+.layer-list {
+  list-style: none;
+}
+
+.layer-list li {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.layer-list input {
+  transform: scale(1.2);
+  margin-right: 0.5rem;
+}
+
+/* Sticky Notes */
+.sticky-note {
+  position: absolute;
+  width: 180px;
+  padding: 1rem;
+  padding-top: 1.5rem;
+  box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2);
+  font-family: var(--font-hand);
+  transform: rotate(2deg);
+}
+
+.sticky-note .pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5rem;
+}
+
+.sticky-note.yellow {
+  background: var(--sticky-yellow);
+}
+
+.sticky-note.pink {
+  background: var(--sticky-pink);
+}
+
+.sticky-note.note-1 {
+  top: 100px;
+  right: 350px;
+  z-index: 5;
+}
+
+.sticky-note.note-2 {
+  top: 250px;
+  right: 330px;
+  transform: rotate(-3deg);
+  z-index: 6;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal-content.post-it-large {
+  background: var(--sticky-yellow);
+  width: 90%;
+  max-width: 500px;
+  padding: 2rem;
+  box-shadow: 5px 10px 20px rgba(0, 0, 0, 0.3);
+  transform: rotate(-1deg);
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.photo-area {
+  background: #eee;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1rem 0;
+  border: 2px dashed #ccc;
+}
+
+.quick-tags {
+  margin-bottom: 0.5rem;
+}
+
+.tag {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 4px 8px;
+  font-family: var(--font-hand);
+  cursor: pointer;
+}
+
+.priority-selector {
+  margin: 1rem 0;
+  display: flex;
+  gap: 1rem;
+}
+
+.marker {
+  padding: 4px 8px;
+  font-weight: bold;
+}
+
+.marker.red {
+  background: var(--sticky-pink);
+  border-bottom: 2px solid red;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary-red);
+  color: white;
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   追加デザイン (Phase 7)
+   ========================================================================== */
+
+/* 立体感のある白ボタン */
+.action-btn.white-3d {
+  background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+  border: 1px solid #ddd;
+  border-bottom: 3px solid #ccc;
+  border-radius: 8px;
+  padding: 12px 24px;
+  color: var(--ink-black);
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.action-btn.white-3d:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.white-3d .icon {
+  font-size: 1.4rem;
+}
+
+/* ポップアップ（付箋詳細） */
+#popup-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.sticky-note-popup {
+  position: absolute;
+  width: 250px;
+  padding: 16px;
+  background-color: var(--note-yellow);
+  /* デフォルト */
+  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.2);
+  transform-origin: center center;
+  pointer-events: auto;
+  font-family: var(--font-hand);
+  color: var(--ink-black);
+  border-radius: 2px 2px 20px 2px;
+  /* 右下をめくれさせる */
+}
+
+/* 優先度別の色 */
+.sticky-note-popup.pink {
+  background-color: var(--note-pink);
+}
+
+.sticky-note-popup.blue {
+  background-color: var(--note-blue);
+}
+
+.sticky-note-popup .pin {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5rem;
+  text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sticky-note-popup .close-popup {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.sticky-note-popup h3 {
+  margin: 10px 0 8px 0;
+  font-size: 1.4rem;
+  border-bottom: 2px dashed rgba(0, 0, 0, 0.1);
+  padding-bottom: 4px;
+}
+
+.sticky-note-popup .meta {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 8px;
+  font-family: var(--font-base);
+}
+
+.sticky-note-popup .desc {
+  font-size: 1rem;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+
+.sticky-note-popup .attachment-thumb {
+  width: 100%;
+  height: auto;
+  border: 4px solid white;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  transform: rotate(-2deg);
+  margin-bottom: 10px;
+}
+
+.sticky-note-popup .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sticky-note-popup button {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-hand);
+}
+
+.sticky-note-popup button:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* アニメーション用クラス */
+.save-btn.stamped {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
