@@ -1,6 +1,8 @@
-:root {
+﻿:root {
   /* Colors from design_spec.md */
-  --cork-texture: url('https://www.transparenttextures.com/patterns/cork-board.png');
+  /* Colors from design_spec.md */
+  --cork-texture: none;
+  /* url('...') 削除: ネットワークエラー回避 */
   /* Fallback/Online texture */
   --cork-color: #D2B48C;
   --paper-color: #FAFAFA;
@@ -13,6 +15,17 @@
   /* Fonts */
   --font-hand: 'Yomogi', cursive;
   --font-system: 'Noto Sans JP', sans-serif;
+
+  /* Layout specs (design_spec.md v6.1 §6) */
+  --tool-btn-size: 90px;
+  /* 80px → 90px (D-V-1: P1) */
+  --tool-icon-size: 32px;
+  --header-height: 60px;
+  --sidebar-width: 300px;
+
+  /* Transitions */
+  --anim-speed-fast: 0.2s;
+  --anim-speed-normal: 0.3s;
 }
 
 * {
@@ -51,180 +64,131 @@ body {
   position: relative;
 }
 
-/* Header */
+/* Header (design_spec.md v6.1 §3.1: Auto-hide Toolbar) */
 .tools-header {
+  position: fixed;
+  top: 0;
+  /* 緊急修正: 画面上端に配置 (final_quality_report.md v15.0対応) */
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 120px;
+  /* design_spec.md セクション4.1: ツールバー高さ */
+  z-index: 100;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  /* 中央寄せ */
   align-items: center;
   padding: 0.5rem 1rem;
   background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(4px);
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  /* Auto-hide機能 (D-2: P2) - 20%を表示、ホバーで全表示 */
+  transform: translateY(-80%);
+  /* -90%から-80%に変更 */
+  transition: transform var(--anim-speed-normal) cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-.site-title h1 {
-  font-family: var(--font-hand);
-  font-size: 1.5rem;
+.tools-header:hover {
+  transform: translateY(0);
 }
 
-.tool-btn {
+.tools-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.menu-btn {
+  position: absolute;
+  right: 1rem;
   background: none;
   border: none;
-  font-size: 2rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: transform 0.1s;
 }
 
-.tool-btn:hover {
-  transform: scale(1.1) rotate(-5deg);
-}
 
-/* Main Content */
+/* Main Layout Rules */
 .main-content {
   display: flex;
   flex: 1;
-  gap: 2rem;
+  height: calc(100vh - 80px);
+  gap: 16px;
+  padding: 0 16px 16px 16px;
+  position: relative;
   overflow: hidden;
 }
 
-/* 3D Viewer (Paper) */
+/* 3D Canvas Area (Paper style) */
 .paper-canvas-container {
-  flex: 3;
+  flex: 2;
+  /* 画面の2/3を占める */
   background-color: var(--paper-color);
+  border-radius: 2px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   position: relative;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
-  transform: rotate(-1deg);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
+#three-canvas-container {
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  /* ロード前の色 */
+}
+
+/* テープ装飾 */
 .tape {
   position: absolute;
-  width: 100px;
-  height: 30px;
+  width: 80px;
+  height: 24px;
   background-color: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transform: rotate(45deg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   z-index: 10;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .tape.top-left {
   top: -10px;
-  left: -30px;
-  transform: rotate(-45deg);
+  left: 30px;
+  transform: rotate(-5deg);
 }
 
 .tape.top-right {
   top: -10px;
-  right: -30px;
-  transform: rotate(45deg);
+  right: 30px;
+  transform: rotate(5deg);
 }
 
 .tape.bottom-left {
   bottom: -10px;
-  left: -30px;
-  transform: rotate(45deg);
+  left: 30px;
+  transform: rotate(-85deg);
 }
 
 .tape.bottom-right {
   bottom: -10px;
-  right: -30px;
-  transform: rotate(-45deg);
+  right: 30px;
+  transform: rotate(85deg);
 }
 
-#three-canvas-container {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  background: #f0f0f0;
-  /* Fallback */
-}
-
-/* Canvas Overlay UI */
-.canvas-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  pointer-events: none;
-  /* Let clicks pass to canvas */
-}
-
-.canvas-overlay>* {
-  pointer-events: auto;
-}
-
-.view-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.view-btn {
-  width: 60px;
-  height: 60px;
-  background: white;
-  border: 2px solid #ccc;
-  border-radius: 8px;
-  font-weight: bold;
-  font-family: var(--font-hand);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-}
-
-.view-btn.active {
-  background: var(--sticky-blue);
-  border-color: #90CAF9;
-}
-
-.action-bar {
-  position: absolute;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.primary-btn {
-  background: white;
-  border: 1px solid #ddd;
-  padding: 1rem 2rem;
-  font-size: 1.2rem;
-  border-radius: 8px;
-  font-family: var(--font-system);
-  font-weight: bold;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.primary-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Sidebar (Notebook) */
+/* Sidebar (Schedule Notebook) */
 .notebook-sidebar {
   flex: 1;
-  background: white;
-  background-image: linear-gradient(#e1e1e1 1px, transparent 1px);
-  background-size: 100% 2rem;
-  /* Lined paper */
-  padding: 2rem 1rem 1rem 3rem;
-  /* Left padding for holes */
+  /* 画面の1/3 */
+  min-width: 320px;
+  background-color: #fff;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
   position: relative;
-  box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.15);
-  transform: rotate(1deg);
-  border-radius: 0 4px 4px 0;
-  max-width: 300px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .notebook-binding {
@@ -232,51 +196,179 @@ body {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 40px;
-  background: #333;
-  /* Simple spiral binding effect using heavy CSS is skipped for MVP */
+  width: 30px;
+  background:
+    linear-gradient(to right, #ddd 1px, transparent 1px) 10px 0,
+    radial-gradient(circle at left, #333 6px, transparent 7px) 2px 10px;
+  background-size: 100% 100%, 30px 30px;
+  border-right: 1px solid #ccc;
+  z-index: 5;
 }
 
 .notebook-sidebar h2 {
   font-family: var(--font-hand);
-  margin-bottom: 1.5rem;
-  text-decoration: underline;
-  text-decoration-color: var(--primary-red);
+  text-align: center;
+  padding: 10px;
+  border-bottom: 2px dashed #eee;
+  margin-left: 30px;
+  /* binding width */
+  margin-bottom: 0;
 }
 
-.layer-list {
-  list-style: none;
+.zone-tabs {
+  margin-left: 30px;
+  /* binding width */
+  padding: 0 8px;
+  margin-top: 8px;
 }
 
-.layer-list li {
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
+.schedule-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-left: 30px;
+  position: relative;
+  /* 罫線背景: 下揃えに変更してズレを修正 */
+  background-image:
+    linear-gradient(to top, #e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+  background-size: 100% 40px, 100% 100%;
 }
 
-.layer-list input {
-  transform: scale(1.2);
-  margin-right: 0.5rem;
-}
 
-/* Sticky Notes */
+/* Sticky Note Refresh (v3.6) */
 .sticky-note {
   position: absolute;
-  width: 180px;
-  padding: 1rem;
-  padding-top: 1.5rem;
+  width: 200px;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.2);
   font-family: var(--font-hand);
   transform: rotate(2deg);
+  border-radius: 2px;
+  overflow: hidden;
+  /* 角丸用 */
+  transition: transform 0.2s, box-shadow 0.2s;
+  /* リサイズ機能を有効化 */
+  resize: both;
+  min-width: 150px;
+  max-width: 500px;
+  min-height: 120px;
+  max-height: 600px;
 }
 
-.sticky-note .pin {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.5rem;
+/* ホバーで少し浮く */
+.sticky-note:hover {
+  transform: scale(1.02) rotate(0deg);
+  box-shadow: 4px 8px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
 }
 
+/* コンテンツエリア（テキスト） */
+.note-content {
+  flex: 1;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.note-textarea {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  resize: none;
+  outline: none;
+  font-family: var(--font-hand);
+  font-size: 18px;
+  /* 1rem → 18px (D-V-4: P0) */
+  line-height: 1.6;
+  color: var(--ink-color);
+  min-height: 100px;
+  /* 最小高さを確保 */
+}
+
+/* 設定エリア（下部バー） */
+.settings-area {
+  height: 32px;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 8px;
+  opacity: 0;
+  /* デフォルト非表示 */
+  transition: opacity 0.2s;
+}
+
+.sticky-note:hover .settings-area {
+  opacity: 1;
+  /* ホバーで表示 */
+}
+
+/* ハンドル（設定アイコン） */
+.settings-handle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.6;
+}
+
+.settings-handle:hover {
+  opacity: 1;
+}
+
+/* 色選択パレット */
+.color-options {
+  display: flex;
+  gap: 4px;
+  transition: max-width 0.3s ease;
+  overflow: hidden;
+}
+
+.color-options.collapsed {
+  max-width: 0;
+  /* 隠す */
+  margin: 0;
+}
+
+.color-options.expanded {
+  max-width: 100px;
+  /* 表示 */
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.color-dot:hover {
+  transform: scale(1.2);
+}
+
+/* 削除ボタン */
+.delete-btn {
+  margin-left: auto;
+  /* 右寄せ */
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.delete-btn:hover {
+  color: var(--primary-red);
+}
+
+/* 色定義 */
 .sticky-note.yellow {
   background: var(--sticky-yellow);
 }
@@ -285,20 +377,712 @@ body {
   background: var(--sticky-pink);
 }
 
-.sticky-note.note-1 {
-  top: 100px;
-  right: 350px;
+.sticky-note.blue {
+  background: var(--sticky-blue);
+}
+
+.sticky-note.green {
+  background: #C8E6C9;
+}
+
+.color-dot.yellow {
+  background: var(--sticky-yellow);
+}
+
+.color-dot.pink {
+  background: var(--sticky-pink);
+}
+
+.color-dot.blue {
+  background: var(--sticky-blue);
+}
+
+.color-dot.green {
+  background: #C8E6C9;
+}
+
+/* ------------------------------------------------ */
+
+/* Schedule Header (v3.6) */
+.schedule-header {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 1fr 1fr 40px;
+  /* 列追加ボタン分のスペース確保 */
+  background: #f5f5f5;
+  border-bottom: 2px solid #ddd;
+  font-weight: bold;
+  font-family: var(--font-hand);
+  text-align: center;
+  padding: 8px 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  align-items: center;
+}
+
+.schedule-body {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr 1fr 1fr 40px;
+  /* bodyも併せて拡張 */
+  overflow-y: auto;
+  flex: 1;
+  background-image: linear-gradient(to bottom, #eee 1px, transparent 1px);
+  background-size: 100% 40px;
+}
+
+.time-column {
+  border-right: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.time-cell {
+  height: 40px;
+  /* 15分 */
+  padding-right: 4px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #333;
+  line-height: 40px;
+  /* 垂直中央 */
+  border-bottom: 1px solid #eee;
+}
+
+.time-cell.sub-time {
+  font-size: 0.7rem;
+  color: #999;
+  border-bottom: 1px dashed #f5f5f5;
+}
+
+
+/* 5. 列追加ボタン (v5.0) */
+.add-lane-btn {
+  background: var(--sticky-blue);
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--ink-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 24px;
+  cursor: pointer;
+  margin-left: auto;
+  /* 右寄せ */
+  margin-right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.add-lane-btn:hover {
+  background: #bbdefb;
+}
+
+
+
+/* ============================================================ */
+/* タスク管理UI拡張 */
+/* ============================================================ */
+
+/* レーンの追加ボタン */
+.add-task-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: var(--primary-red);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.add-task-btn:hover {
+  background: #D32F2F;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.add-task-btn:active {
+  transform: scale(0.95);
+}
+
+/* タスクバーの色分けスタイル */
+.task-bar.task-carpenter {
+  background: linear-gradient(135deg, #E57373 0%, #EF5350 100%);
+}
+
+.task-bar.task-rebar {
+  background: linear-gradient(135deg, #64B5F6 0%, #42A5F5 100%);
+}
+
+.task-bar.task-concrete {
+  background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+}
+
+.task-bar.task-electrical {
+  background: linear-gradient(135deg, #FFD54F 0%, #FFCA28 100%);
+}
+
+/* タスクアイコンボタンのスタイル調整 */
+.task-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.task-icon-btn:hover {
+  opacity: 1;
+}
+
+.task-icon-btn.delete-icon {
+  color: #f44336;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* レーンヘッダー編集可能スタイル */
+.lane-header[contenteditable="true"] {
+  cursor: text;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.lane-header[contenteditable="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.lane-header[contenteditable="true"]:focus {
+  outline: 2px solid var(--primary-blue);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 6. 付箋リサイズ (v5.0) */
+.sticky-note {
+  /* min-width: 150px; 削除または調整 */
+  display: flex;
+  flex-direction: column;
+}
+
+.sticky-note.resizable {
+  resize: both;
+  overflow: hidden;
+  /* ハンドルは出るはず */
+  min-width: 100px;
+  min-height: 100px;
+}
+
+.note-text {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  /* コンテナ側でリサイズ */
+  overflow: auto;
+}
+
+.lane {
+  position: relative;
+  border-right: 1px dashed #eee;
+  min-width: 100px;
+  /* 列幅確保 */
+}
+
+.task-bar {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: #ddd;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.8rem;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: var(--font-hand);
+  writing-mode: vertical-rl;
+  /* 縦書きで収める */
+  cursor: grab;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.task-bar:active {
+  cursor: grabbing;
+}
+
+.sticky-note {
+  cursor: grab;
+}
+
+.sticky-note.dragging,
+.task-bar.dragging {
+  cursor: grabbing;
+  opacity: 0.9;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+  z-index: 1000 !important;
+}
+
+/* v7.0: 列間移動機能用スタイル */
+.task-bar.dragging-horizontal {
+  opacity: 0.7;
+  cursor: grabbing;
+  z-index: 1000;
+}
+
+.lane.drop-target {
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 2px dashed #4CAF50;
+  box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
+}
+
+.task-bar.moving {
+  transition: all 0.3s ease;
+}
+
+
+/* 付箋内のテキストエリアはテキストカーソル */
+.sticky-note textarea {
+  cursor: text;
+}
+
+.task-bar:hover {
+  transform: scale(1.02);
   z-index: 5;
 }
 
-.sticky-note.note-2 {
-  top: 250px;
-  right: 330px;
-  transform: rotate(-3deg);
-  z-index: 6;
+/* 職種別カラー */
+.lane.carpenter .task-bar {
+  background: #8D6E63;
 }
 
-/* Modal */
+.lane.rebar .task-bar {
+  background: #5C6BC0;
+}
+
+.lane.concrete .task-bar {
+  background: #78909C;
+}
+
+.lane.electrical .task-bar {
+  background: #FFA726;
+}
+
+/* タスクバーリサイズハンドル (I-V-6: P0) */
+.task-resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: rgba(255, 0, 0, 0.3);
+  z-index: 10;
+  transition: background 0.2s, height 0.2s;
+}
+
+.task-resize-handle.top {
+  top: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+.task-resize-handle.bottom {
+  bottom: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.task-resize-handle:hover {
+  background: rgba(255, 0, 0, 0.6);
+  height: 12px;
+}
+
+/* 2. RVTロード画面 */
+#loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  flex-direction: column;
+}
+
+.loading-content p {
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  margin-top: 20px;
+  color: #555;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--primary-red);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 3. 付箋調整 */
+.sticky-note .pin {
+  display: none;
+  /* ピン削除 */
+}
+
+/* 4. 工区タブ (v3.4) */
+.zone-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
+.zone-tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-family: var(--font-hand);
+  font-size: 0.9rem;
+  border: none;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.zone-tab:hover {
+  background: #f0f0f0;
+}
+
+.zone-tab.active {
+  background: var(--sticky-blue);
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* タブ編集時のスタイル */
+.zone-tab:focus {
+  background: white;
+  border: 2px dashed var(--primary-red);
+}
+
+/* スタンプセレクター */
+.stamp-selector {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 1rem 0;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+}
+
+/* モーダル内アイコンボタン (D-V-4: P0 - 現場視認性向上) */
+.stamp-btn,
+.modal-footer .save-btn,
+.modal-footer .cancel-btn,
+.save-btn,
+.cancel-btn {
+  height: 50px;
+  /* QA修正: 23px → 50px (P0) */
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stamp-btn:hover,
+.icon-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.stamp-btn.active,
+.icon-btn.selected {
+  border-color: #2196F3;
+  background: #E3F2FD;
+  box-shadow: 0 0 0 3px #2196F3;
+}
+
+/* モーダル内テキストエリアとボタン (D-V-4: P0) */
+.comment-input,
+.modal-content textarea,
+.input-area textarea {
+  font-size: 18px;
+  min-height: 100px;
+  padding: 16px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  width: 100%;
+  line-height: 1.6;
+}
+
+.modal-footer button,
+.btn-save,
+.btn-cancel,
+.tag,
+.quick-tags button {
+  height: 50px;
+  font-size: 16px;
+  padding: 12px 24px;
+  min-width: 100px;
+}
+
+/* 設定パネル */
+.settings-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 400px;
+}
+
+.setting-item {
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.setting-item label {
+  flex: 1;
+  font-family: var(--font-hand);
+}
+
+.setting-item select {
+  flex: 2;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: var(--font-system);
+}
+
+/* カスタムピンアイコン用変数 */
+:root {
+  --stamp-check: #4CAF50;
+  --stamp-question: #9E9E9E;
+  --stamp-alert: #F44336;
+  --stamp-chat: #2196F3;
+  --stamp-star: #FFC107;
+  --stamp-memo: #795548;
+}
+
+/* ポップアップの優先度別色を変数参照に修正 */
+.sticky-note-popup.yellow {
+  background-color: var(--sticky-yellow);
+}
+
+
+
+/* 動的付箋コンテナ */
+#sticky-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+#sticky-container .sticky-note {
+  pointer-events: auto;
+  position: absolute;
+  cursor: grab;
+}
+
+#sticky-container .sticky-note:active {
+  cursor: grabbing;
+}
+
+/* 動的付箋の追加スタイル */
+.sticky-note.draggable {
+  position: absolute !important;
+  user-select: none;
+  transition: box-shadow 0.2s;
+}
+
+.sticky-note.draggable:hover {
+  box-shadow: 4px 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.sticky-note.dragging {
+  opacity: 0.8;
+  transform: rotate(5deg) scale(1.05);
+  z-index: 1000;
+}
+
+/* 削除ボタン */
+.sticky-note .delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f44336;
+  color: white;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.sticky-note:hover .delete-btn {
+  opacity: 1;
+}
+
+/* 色選択ドット */
+.sticky-note .color-selector {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sticky-note:hover .color-selector {
+  opacity: 1;
+}
+
+.color-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.color-dot.yellow {
+  background: var(--sticky-yellow);
+}
+
+.color-dot.pink {
+  background: var(--sticky-pink);
+}
+
+.color-dot.blue {
+  background: var(--sticky-blue);
+}
+
+.color-dot.green {
+  background: #C8E6C9;
+}
+
+/* 付箋の緑色追加 */
+.sticky-note.green {
+  background: #C8E6C9;
+}
+
+/* 付箋テキスト（編集可能） */
+.sticky-note .note-text {
+  outline: none;
+  min-height: 50px;
+  margin-top: 20px;
+}
+
+.sticky-note .note-text:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+/* 付箋作成モーダル */
+.sticky-create-modal {
+  background: var(--sticky-yellow);
+  max-width: 350px;
+}
+
+.color-picker {
+  margin: 1rem 0;
+}
+
+.color-picker label {
+  font-family: var(--font-hand);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.color-options {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.color-option {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+}
+
+.color-option.active {
+  border-color: var(--ink-color);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.color-option.yellow {
+  background: var(--sticky-yellow);
+}
+
+.color-option.pink {
+  background: var(--sticky-pink);
+}
+
+.color-option.blue {
+  background: var(--sticky-blue);
+}
+
+.color-option.green {
+  background: #C8E6C9;
+}
+
+/* ========================================
+   モーダル関連スタイル (P0修正)
+   ======================================== */
+
 .modal {
   position: fixed;
   top: 0;
@@ -307,223 +1091,335 @@ body {
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 100;
+  justify-content: center;
+  z-index: 2000;
 }
 
-.modal-content.post-it-large {
-  background: var(--sticky-yellow);
-  width: 90%;
-  max-width: 500px;
-  padding: 2rem;
-  box-shadow: 5px 10px 20px rgba(0, 0, 0, 0.3);
-  transform: rotate(-1deg);
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
   position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-hand);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  font-size: 1.8rem;
+  color: var(--ink-color);
 }
 
 .close-btn {
   position: absolute;
-  top: 0.5rem;
-  right: 1rem;
-  background: none;
+  top: 12px;
+  right: 12px;
+  background: transparent;
   border: none;
-  font-size: 2rem;
+  font-size: 28px;
   cursor: pointer;
-}
-
-.photo-area {
-  background: #eee;
-  height: 150px;
+  color: #666;
+  width: 40px;
+  height: 40px;
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin: 1rem 0;
-  border: 2px dashed #ccc;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+  line-height: 1;
 }
 
-.quick-tags {
-  margin-bottom: 0.5rem;
-}
-
-.tag {
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 12px;
-  padding: 4px 8px;
-  font-family: var(--font-hand);
-  cursor: pointer;
-}
-
-.priority-selector {
-  margin: 1rem 0;
-  display: flex;
-  gap: 1rem;
-}
-
-.marker {
-  padding: 4px 8px;
-  font-weight: bold;
-}
-
-.marker.red {
-  background: var(--sticky-pink);
-  border-bottom: 2px solid red;
-}
-
-.save-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--primary-red);
-  color: white;
-  font-family: var(--font-hand);
-  font-size: 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+  transform: scale(1.1);
 }
 
 /* ==========================================================================
-   追加デザイン (Phase 7)
+   v7.3 追加スタイル (design_spec.md v6.0 対応)
    ========================================================================== */
 
-/* 立体感のある白ボタン */
-.action-btn.white-3d {
-  background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
-  border: 1px solid #ddd;
-  border-bottom: 3px solid #ccc;
-  border-radius: 8px;
-  padding: 12px 24px;
-  color: var(--ink-black);
-  font-family: var(--font-hand);
-  font-size: 1.2rem;
-  font-weight: bold;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.1s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.action-btn.white-3d:active {
-  transform: translateY(2px);
-  border-bottom-width: 1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.action-btn.white-3d .icon {
-  font-size: 1.4rem;
-}
-
-/* ポップアップ（付箋詳細） */
-#popup-container {
-  position: absolute;
+/* 1. ツールバー (大型化対応) */
+.tools-header {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-.sticky-note-popup {
-  position: absolute;
-  width: 250px;
-  padding: 16px;
-  background-color: var(--note-yellow);
-  /* デフォルト */
-  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.2);
-  transform-origin: center center;
-  pointer-events: auto;
-  font-family: var(--font-hand);
-  color: var(--ink-black);
-  border-radius: 2px 2px 20px 2px;
-  /* 右下をめくれさせる */
-}
-
-/* 優先度別の色 */
-.sticky-note-popup.pink {
-  background-color: var(--note-pink);
-}
-
-.sticky-note-popup.blue {
-  background-color: var(--note-blue);
-}
-
-.sticky-note-popup .pin {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.5rem;
-  text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-.sticky-note-popup .close-popup {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  opacity: 0.5;
-}
-
-.sticky-note-popup h3 {
-  margin: 10px 0 8px 0;
-  font-size: 1.4rem;
-  border-bottom: 2px dashed rgba(0, 0, 0, 0.1);
-  padding-bottom: 4px;
-}
-
-.sticky-note-popup .meta {
-  font-size: 0.8rem;
-  color: #666;
-  margin-bottom: 8px;
-  font-family: var(--font-base);
-}
-
-.sticky-note-popup .desc {
-  font-size: 1rem;
-  line-height: 1.4;
-  margin-bottom: 12px;
-  white-space: pre-wrap;
-}
-
-.sticky-note-popup .attachment-thumb {
-  width: 100%;
-  height: auto;
-  border: 4px solid white;
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
-  transform: rotate(-2deg);
-  margin-bottom: 10px;
-}
-
-.sticky-note-popup .actions {
+  height: 120px;
+  /* design_spec.md セクション4.1: ツールバー高さ */
+  background: transparent;
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  justify-content: center;
+  z-index: 1000;
+  pointer-events: none;
 }
 
-.sticky-note-popup button {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
+.tools-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 32px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+
+
+.tool-btn {
+  width: var(--tool-btn-size);
+  /* 80px */
+  height: var(--tool-btn-size);
+  /* 80px */
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+  color: #333;
+  /* 文字色指定 */
+  font-size: var(--tool-icon-size);
+  /* 32px - ボタン直接の絵文字用 */
+}
+
+.tool-btn .icon {
+  font-size: var(--tool-icon-size);
+  /* 32px */
+  /* アイコンサイズ拡大 */
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.tool-btn .label {
+  font-size: 13px;
+  /* 少し大きく */
   font-family: var(--font-hand);
+  /* 手書き風フォント適用 */
+  color: #555;
+  font-weight: bold;
 }
 
-.sticky-note-popup button:hover {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-/* アニメーション用クラス */
-.save-btn.stamped {
+.tool-btn:active {
   transform: scale(0.95);
+}
+
+.tool-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.tool-btn.active {
+  background: #E3F2FD;
+  border: 2px solid #2196F3;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 2. ドラッグ操作の強化 */
+
+/* 付箋 */
+.sticky-note {
+  cursor: grab;
+  transition: transform 0.2s, box-shadow 0.2s;
+  /* top/left は transition 対象外にすること（ドラッグ追従のため） */
+}
+
+.sticky-note:active {
+  cursor: grabbing;
+}
+
+.sticky-note.dragging {
+  cursor: grabbing !important;
+  opacity: 0.9;
+  z-index: 2000 !important;
+  transform: scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  /* 重要: マウスイベントを背面のGlobal Handlerに渡す */
+}
+
+/* タスクバー */
+.task-bar {
+  cursor: grab;
+}
+
+.task-bar.dragging {
+  cursor: grabbing !important;
   opacity: 0.8;
+  z-index: 100 !important;
+  pointer-events: none;
+  /* 重要 */
+}
+
+/* 3. 設定エリアの操作性 */
+.settings-area {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.sticky-note:hover .settings-area,
+/* .sticky-note:focus-within はテキストエリア入力中も表示したい場合に有効 */
+.sticky-note:focus-within .settings-area {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 4. タスクバーアイコン */
+.task-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+}
+
+.task-text {
+  flex: 1;
+  pointer-events: none;
+  /* テキスト部分はドラッグのみ */
+}
+
+.task-icons {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task-bar:hover .task-icons {
+  opacity: 1;
+}
+
+.task-icon-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.task-icon-btn:hover {
+  background: #fff;
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.task-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* =========================================
+   P0 ����e��n�A�c�: g~�g~y�g~o�]~��0+�:X}��aQug~y�g~�g~d�]~k�
+   Design Spec v11.1 ��S�O
+   ========================================= */
+
+/* ]~j�g~u�g~d�g~z�]~
+N�]~�\� (>�WN�0:~��:~�hCh��a�^��}�) */
+.task-resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  cursor: ns-resize;
+  z-index: 10;
+}
+
+.task-resize-handle.top {
+  top: -5px;
+}
+
+.task-resize-handle.bottom {
+  bottom: -5px;
+}
+
+/* ホバー時にハンドルを目立たせる */
+.task-resize-handle:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* タスクバー 編集ボタン (問題1-A対応) */
+.task-edit-buttons {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+  opacity: 1;
+  /* 常時表示 */
+  transition: opacity 0.2s;
+  pointer-events: auto;
+}
+
+/* タスクバー ホバー時も維持 */
+.task-bar:hover .task-edit-buttons {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 編集ボタン個別スタイル */
+.task-edit-btn,
+.task-delete-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.task-delete-btn {
+  color: #D32F2F;
+}
+
+.task-edit-btn:hover,
+.task-delete-btn:hover {
+  transform: scale(1.1);
+  background: #fff;
+}
+
+/* タスクバー ドラッグ中のスタイル */
+.task-bar.dragging {
+  opacity: 0.8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+/* リサイズバー */
+.resize-bar {
+  position: absolute;
+  right: var(--sidebar-width);
+  top: var(--header-height);
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
+  z-index: 50;
+  transition: background 0.2s;
+}
+
+.resize-bar:hover {
+  background: linear-gradient(to right, transparent, rgba(66, 133, 244, 0.3), transparent);
+  width: 8px;
+}
+
+.resize-bar.resizing {
+  background: rgba(66, 133, 244, 0.5);
 }

@@ -1,0 +1,24 @@
+// タスクバーリサイズ機能（Phase 2: P0）の呼び出し方法
+// 
+// 1. main.jsのDOMContentLoadedイベント内で初期化:
+//    initResizeHandlers();
+//
+// 2. renderSchedule()関数内で、タスクバー生成後に:
+//    addResizeHandles(taskBar);
+//
+// 例:
+// document.addEventListener('DOMContentLoaded', () => {
+//     initResizeHandlers(); // グローバルイベントリスナー登録
+//     // ...他の初期化処理
+// });
+//
+// function renderSchedule() {
+//     // ...タスクバー生成処理
+//     const taskBar = document.createElement('div');
+//     taskBar.className = 'task-bar';
+//     // ...スタイル設定
+//     
+//     addResizeHandles(taskBar); // リサイズハンドル追加 ⭐
+//     
+//     // ...その他の処理
+// }

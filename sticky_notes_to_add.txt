@@ -1,0 +1,15 @@
+﻿      <!-- デフォルト付箋2枚 -->
+      <div class="sticky-note" style="top: 20px; left: 540px; width: 150px; height: 120px; background: #FFF9C4;">
+        <div class="sticky-header">
+          <button class="settings-handle" title="設定"></button>
+          <button class="delete-btn" title="削除"></button>
+        </div>
+        <textarea placeholder=" 安全ミーティング" style="background: transparent;"> 安全ミーティング</textarea>
+      </div>
+      <div class="sticky-note" style="top: 100px; left: 540px; width: 150px; height: 120px; background: #F8BBD0;">
+        <div class="sticky-header">
+          <button class="settings-handle" title="設定"></button>
+          <button class="delete-btn" title="削除"></button>
+        </div>
+        <textarea placeholder=" メモ" style="background: transparent;"> ゾーン配筋検査請</textarea>
+      </div>

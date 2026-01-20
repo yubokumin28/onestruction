@@ -1,0 +1,24 @@
+// タスクバーリサイズ統合コード
+// このコードをmain.jsの末尾に追加してください
+
+// 1. ファイル先頭のインポート部分に追加
+/*
+import { addResizeHandles, initResizeHandlers } from './task-resize.js';
+*/
+
+// 2. DOMContentLoaded内（初期化部分）に追加
+// 場所: document.addEventListener('DOMContentLoaded', async () => { の直後
+/*
+    // タスクバーリサイズ機能の初期化
+    initResizeHandlers();
+*/
+
+// 3. renderSchedule()関数内、タスクバー生成後に追加
+// 場所: lane.appendChild(bar); の直前
+/*
+    // タスクバーリサイズハンドル追加
+    addResizeHandles(bar);
+*/
+
+// 完全版サンプル
+console.log('タスクバーリサイズ統合サンプル - TASK_RESIZE_INTEGRATION.txt を参照');

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -6,7 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>建設DX現場ボード</title>
   <meta name="description" content="建設現場のアナログ情報を3Dモデル上で管理するDXツール" />
-  <!-- Google Fonts: 手書き風（Yomogi）とゴシック（Noto Sans JP） -->
+
+  <!-- Three.js Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/examples/jsm/controls/OrbitControls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/renderers/CSS2DRenderer": "https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js"
+    }
+  }
+  </script>
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Yomogi&display=swap"
@@ -18,18 +30,22 @@
   <!-- 全体コンテナ (コルクボード) -->
   <div id="app" class="corkboard">
 
-    <!-- 上部ツールバー (文房具) -->
+    <!-- 上部ツールバー (機能統合版) - アイコンを削除 -->
     <header class="tools-header">
       <div class="site-title">
-        <span class="icon">🏗️</span>
         <h1>現場A: 施工記録ボード</h1>
       </div>
-      <div class="tools-container">
-        <button class="tool-btn" title="定規">📏</button>
-        <button class="tool-btn" title="ペン">✏️</button>
-        <button class="tool-btn" title="計算機">🧮</button>
+
+      <div class="tools-container tool-tray">
+        <button class="tool-btn" data-tool="sticky" title="📌 付箋を追加">📌</button>
+        <button class="tool-btn" data-tool="load" title="📄 図面を読み込む">📄</button>
+        <button class="tool-btn" data-tool="photo" title="📷 画像を追加">📷</button>
+        <button class="tool-btn" data-tool="settings" title="⚙️ 設定">⚙️</button>
+        <!-- 隠しファイル入力 -->
+        <input type="file" id="file-input" accept=".rvt,.ifc" style="display: none;" />
       </div>
       <button class="menu-btn">☰</button>
+
     </header>
 
     <!-- メインエリア -->
@@ -43,49 +59,141 @@
 
         <div id="three-canvas-container"></div>
 
+        <!-- デフォルト付箋2枚 -->
+        <div class="sticky-note" style="top: 20px; right: 20px; width: 150px; height: 120px; background: #FFF9C4;">
+          <div class="sticky-header">
+            <button class="settings-handle" title="設定">⚙️</button>
+            <button class="delete-btn" title="削除">×</button>
+          </div>
+          <textarea placeholder="メモ" style="background: transparent;">📌 安全ミーティング</textarea>
+        </div>
+
+        <div class="sticky-note" style="top: 150px; right: 20px; width: 150px; height: 120px; background: #F8BBD0;">
+          <div class="sticky-header">
+            <button class="settings-handle" title="設定">⚙️</button>
+            <button class="delete-btn" title="削除">×</button>
+          </div>
+          <textarea placeholder="メモ" style="background: transparent;">📌 ゾーン配筋検査請</textarea>
+        </div>
+
         <!-- オーバーレイUI (3D内の操作) -->
         <div class="canvas-overlay">
+          <!-- ビュー切替ボタン -->
           <div class="view-controls">
-            <button class="view-btn active">全体</button>
-            <button class="view-btn">安全</button>
-            <button class="view-btn">施工</button>
-          </div>
-
-          <div class="action-bar">
-            <!-- 立体感のある白ボタンに変更 -->
-            <button id="add-issue-btn" class="action-btn white-3d">
-              <span class="icon">📷</span>
-              <span class="text handwritten">画像を追加</span>
-            </button>
+            <button class="view-btn active" data-view="overview" title="斜め上からの俯瞰ビュー">全体図</button>
+            <button class="view-btn" data-view="plan" title="真上からの垂直投影">平面図</button>
+            <button class="view-btn" data-view="section" title="横からの側面ビュー">縦断図</button>
           </div>
         </div>
 
         <!-- ポップアップ表示エリア -->
         <div id="popup-container"></div>
+
+        <!-- RVTロード画面 (v3.2追加) -->
+        <div id="loading-overlay" class="hidden">
+          <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Revitファイルを読み込んでいます...</p>
+          </div>
+        </div>
       </div>
 
-      <!-- 右サイドバー (ノート) -->
-      <aside class="notebook-sidebar">
+      <!-- リサイズバー -->
+      <div id="resize-bar" class="resize-bar"></div>
+
+      <!-- 右サイドバー: マルチレーン型タイムスケジュール -->
+      <aside class="notebook-sidebar schedule-panel">
         <div class="notebook-binding"></div>
-        <h2>レイヤー・属性</h2>
-        <ul class="layer-list">
-          <li><label class="handwritten"><input type="checkbox" checked> 基礎</label></li>
-          <li><label class="handwritten"><input type="checkbox" checked> 鉄骨フレーム</label></li>
-          <li><label class="handwritten"><input type="checkbox"> 空調ダクト</label></li>
-          <li><label class="handwritten"><input type="checkbox"> 電気配線</label></li>
-        </ul>
+        <h2>本日のスケジュール</h2>
+        <!-- 工区切り替えタブ -->
+        <div class="zone-tabs">
+          <button class="zone-tab active" data-zone="A" contenteditable="true">A工区</button>
+          <button class="zone-tab" data-zone="B" contenteditable="true">B工区</button>
+          <button class="zone-tab" data-zone="C" contenteditable="true">C工区</button>
+        </div>
+        <div class="schedule-grid">
+          <!-- ヘッダー行 -->
+          <div class="schedule-header" id="schedule-header">
+            <div class="time-header">時刻</div>
+            <!-- JSによりレーンヘッダー追加 -->
+            <button id="add-lane-btn" class="add-lane-btn" title="列を追加">＋</button>
+            <div class="lane-header" contenteditable="true">大工</div>
+            <div class="lane-header" contenteditable="true">鉄筋屋</div>
+            <div class="lane-header" contenteditable="true">生コン</div>
+            <div class="lane-header" contenteditable="true">電気工</div>
+          </div>
+          <!-- 時間軸とマルチレーン -->
+          <div class="schedule-body">
+            <!-- 時刻軸 (15分刻み) -->
+            <div class="time-column">
+              <!-- 08:00台 -->
+              <div class="time-cell">08:00</div>
+              <div class="time-cell sub-time">08:15</div>
+              <div class="time-cell sub-time">08:30</div>
+              <div class="time-cell sub-time">08:45</div>
+              <!-- 09:00台 -->
+              <div class="time-cell">09:00</div>
+              <div class="time-cell sub-time">09:15</div>
+              <div class="time-cell sub-time">09:30</div>
+              <div class="time-cell sub-time">09:45</div>
+              <!-- 10:00台 -->
+              <div class="time-cell">10:00</div>
+              <div class="time-cell sub-time">10:15</div>
+              <div class="time-cell sub-time">10:30</div>
+              <div class="time-cell sub-time">10:45</div>
+              <!-- 11:00台 -->
+              <div class="time-cell">11:00</div>
+              <div class="time-cell sub-time">11:15</div>
+              <div class="time-cell sub-time">11:30</div>
+              <div class="time-cell sub-time">11:45</div>
+              <!-- 12:00台 -->
+              <div class="time-cell">12:00</div>
+              <div class="time-cell sub-time">12:15</div>
+              <div class="time-cell sub-time">12:30</div>
+              <div class="time-cell sub-time">12:45</div>
+              <!-- 13:00台 -->
+              <div class="time-cell">13:00</div>
+              <div class="time-cell sub-time">13:15</div>
+              <div class="time-cell sub-time">13:30</div>
+              <div class="time-cell sub-time">13:45</div>
+              <!-- 14:00台 -->
+              <div class="time-cell">14:00</div>
+              <div class="time-cell sub-time">14:15</div>
+              <div class="time-cell sub-time">14:30</div>
+              <div class="time-cell sub-time">14:45</div>
+              <!-- 15:00台 -->
+              <div class="time-cell">15:00</div>
+              <div class="time-cell sub-time">15:15</div>
+              <div class="time-cell sub-time">15:30</div>
+              <div class="time-cell sub-time">15:45</div>
+              <!-- 16:00台 -->
+              <div class="time-cell">16:00</div>
+              <div class="time-cell sub-time">16:15</div>
+              <div class="time-cell sub-time">16:30</div>
+              <div class="time-cell sub-time">16:45</div>
+              <!-- 17:00 -->
+              <div class="time-cell">17:00</div>
+            </div>
+            <!-- 大工レーン -->
+            <div class="lane carpenter">
+              <div class="task-bar" style="top: 0; height: 320px;" title="大工: 8:00-10:00">作業中</div>
+            </div>
+            <!-- 鉄筋屋レーン -->
+            <div class="lane rebar">
+              <div class="task-bar" style="top: 160px; height: 480px;" title="鉄筋屋: 9:00-12:00">作業中</div>
+            </div>
+            <!-- 生コンレーン -->
+            <div class="lane concrete">
+              <div class="task-bar" style="top: 640px; height: 480px;" title="生コン屋: 12:00-15:00">作業中</div>
+            </div>
+            <!-- 電気工レーン -->
+            <div class="lane electrical">
+              <div class="task-bar" style="top: 640px; height: 800px;" title="電気工: 12:00-17:00">作業中</div>
+            </div>
+          </div>
+        </div>
       </aside>
     </main>
-
-    <!-- 付箋メモ (装飾用) -->
-    <div class="sticky-note yellow note-1">
-      <div class="pin">📌</div>
-      <p class="handwritten">9:00 安全ミーティング!</p>
-    </div>
-    <div class="sticky-note pink note-2">
-      <div class="pin">📌</div>
-      <p class="handwritten">Bゾーン資材搬入確認</p>
-    </div>
 
   </div>
 
@@ -94,6 +202,16 @@
     <div class="modal-content post-it-large">
       <button class="close-btn">×</button>
       <h2 class="handwritten">📝 指摘事項メモ</h2>
+
+      <!-- スタンプ選択 -->
+      <div class="stamp-selector">
+        <button class="stamp-btn" data-stamp="stamp_check" title="完了">✅</button>
+        <button class="stamp-btn" data-stamp="stamp_question" title="疑問">❓</button>
+        <button class="stamp-btn active" data-stamp="stamp_memo" title="メモ">📝</button>
+        <button class="stamp-btn" data-stamp="stamp_alert" title="注意">⚠️</button>
+        <button class="stamp-btn" data-stamp="stamp_chat" title="相談">💬</button>
+        <button class="stamp-btn" data-stamp="stamp_star" title="重要">⭐</button>
+      </div>
 
       <div class="photo-area">
         <button class="camera-btn">📷 写真を撮る</button>
@@ -119,7 +237,53 @@
     </div>
   </div>
 
-  <script type="module" src="/src/main.js"></script>
+  <!-- 設定パネル -->
+  <div id="settings-panel" class="modal hidden">
+    <div class="modal-content settings-content">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">⚙️ 設定</h2>
+      <div class="setting-item">
+        <label>付箋フォント:</label>
+        <select id="font-select">
+          <option value="'Yomogi', cursive">Yomogi (手書き風)</option>
+          <option value="'MS Gothic', monospace">MS Gothic</option>
+          <option value="'Noto Sans JP', sans-serif">Noto Sans JP</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>フォントサイズ:</label>
+        <select id="font-size-select">
+          <option value="12px">12px</option>
+          <option value="16px" selected>16px</option>
+          <option value="20px">20px</option>
+          <option value="24px">24px</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 付箋作成モーダル -->
+  <div id="sticky-modal" class="modal hidden">
+    <div class="modal-content sticky-create-modal">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">📌 新しい付箋</h2>
+      <div class="color-picker">
+        <label>色を選択:</label>
+        <div class="color-options">
+          <span class="color-option yellow active" data-color="yellow"></span>
+          <span class="color-option pink" data-color="pink"></span>
+          <span class="color-option blue" data-color="blue"></span>
+          <span class="color-option green" data-color="green"></span>
+        </div>
+      </div>
+      <div class="input-area">
+        <textarea id="new-sticky-text" placeholder="メモを入力..."></textarea>
+      </div>
+      <button id="create-sticky-btn" class="save-btn">付箋を追加</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>

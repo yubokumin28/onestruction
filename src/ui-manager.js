@@ -66,6 +66,11 @@ export class UIManager {
      * @param {Object} issue Issueデータ
      * @param {Object} screenPosition 画面上の座標 {x, y}
      */
+    /**
+     * 既存Issue詳細ポップアップを表示
+     * @param {Object} issue Issueデータ
+     * @param {Object} screenPosition 画面上の座標 {x, y}
+     */
     showIssuePopup(issue, screenPosition) {
         // 既存のポップアップがあれば削除
         if (this.currentPopup) {
@@ -82,14 +87,21 @@ export class UIManager {
         popup.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.27)';
 
         const dateStr = new Date(issue.created_at).toLocaleDateString('ja-JP');
+        const iconChar = this.getIconChar(issue.markup_type || 'stamp_memo');
 
         popup.innerHTML = `
-            <div class="pin">📌</div>
+            <div class="pin-icon">${iconChar}</div>
             <button class="close-popup">×</button>
-            <h3 class="handwritten">${issue.title}</h3>
+            <h3 class="handwritten">${issue.title || '無題のメモ'}</h3>
             <p class="meta">📅 ${dateStr} | ${issue.status === 'open' ? '未対応' : '対応済'}</p>
-            <p class="desc">${issue.description || '詳細なし'}</p>
-            ${issue.image_url ? `<img src="${issue.image_url}" class="attachment-thumb" />` : ''}
+            
+            ${issue.image_url ? `
+            <div class="photo-frame">
+                <img src="${issue.image_url}" class="attachment-thumb" alt="現場写真" />
+            </div>` : ''}
+
+            <p class="desc handwritten">${issue.description || '詳細なし'}</p>
+            
             <div class="actions">
                 <button class="edit-btn">編集</button>
                 ${issue.status === 'open' ? '<button class="resolve-btn">解決!</button>' : ''}
@@ -132,6 +144,18 @@ export class UIManager {
             case 'high': return 'pink';
             case 'low': return 'blue';
             default: return 'yellow';
+        }
+    }
+
+    getIconChar(type) {
+        switch (type) {
+            case 'stamp_check': return '✅';
+            case 'stamp_question': return '❓';
+            case 'stamp_alert': return '⚠️';
+            case 'stamp_chat': return '💬';
+            case 'stamp_star': return '⭐';
+            case 'stamp_memo': return '📝';
+            default: return '📍';
         }
     }
 }

@@ -8,6 +8,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { AxisLabels } from './axis-labels.js'; // Phase 3 (P1): I-V-7/I-V-8
 // IFCLoaderはThree.jsバージョン互換性問題のため一時的に無効化
 // import { IFCLoader } from 'web-ifc-three/IFCLoader';
 
@@ -18,6 +19,7 @@ export class BIMViewer {
         this.camera = null;
         this.renderer = null;
         this.controls = null;
+        this.axisLabels = null; // Phase 3 (P1): 3D軸ラベル・目盛り
         // this.ifcLoader = new IFCLoader();  // 一時的に無効化
         this.pins = [];  // ピンオブジェクト一覧
         this.raycaster = new THREE.Raycaster();
@@ -31,6 +33,7 @@ export class BIMViewer {
         this.setupScene();
         this.setupLights();
         this.setupControls();
+        this.setupAxisLabels(); // Phase 3 (P1)
         this.setupClickHandler();
         this.loadModel();
         this.animate();
@@ -55,6 +58,17 @@ export class BIMViewer {
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.container.appendChild(this.renderer.domElement);
+
+        // XY平面グリッド表示 (design_spec.md v6.1 §4.1, research.md v5.1 §5.2)
+        const gridHelper = new THREE.GridHelper(100, 50, 0x888888, 0xcccccc);
+        this.scene.add(gridHelper);
+
+        // 原点マーカー (赤い球体)
+        const originGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+        const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const originMarker = new THREE.Mesh(originGeometry, originMaterial);
+        originMarker.position.set(0, 0, 0);
+        this.scene.add(originMarker);
     }
 
     setupLights() {
@@ -71,6 +85,15 @@ export class BIMViewer {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
+    }
+
+    /**
+     * 3D軸ラベル・目盛りの初期化 (Phase 3: P1)
+     */
+    setupAxisLabels() {
+        if (this.scene && this.container && this.camera) {
+            this.axisLabels = new AxisLabels(this.scene, this.container, this.camera);
+        }
     }
 
     /**
@@ -125,13 +148,16 @@ export class BIMViewer {
         // IFCLoader は一時的に無効化（Three.jsバージョン互換性問題）
         // IFCファイルを読み込む場合は、互換性のあるバージョンに更新が必要
         // try {
-        //     await this.ifcLoader.ifcManager.setWasmPath('../../node_modules/web-ifc/');
+        //     await this.ifcLoader.ifcManager.setWasmPath('../../node_modules/web-ifc/');\
         // } catch (e) {
         //     console.warn("WASMパス設定エラー:", e.message);
         // }
 
-        // モックビルディングを作成
-        this.createMockBuilding();
+        // モックビルディングを作成 (Snowdon Towers)
+        // 参照: test-folder/Snowdon Towers Sample Architectural.rvt (94.7MB)
+        // RVTファイルは直接読み込めないため、Three.jsでエミュレーション
+        this.createSnowdonMock();
+        console.log("🏗️ [テスト] test-folder/Snowdon Towers Sample Architectural.rvt を読み込みました（Three.jsエミュレーション）");
     }
 
     createMockBuilding() {
@@ -164,6 +190,73 @@ export class BIMViewer {
     }
 
     /**
+     * サンプルモデルの読み込みシミュレーション
+     * @param {string} fileName 
+     */
+    async loadSampleModel(fileName) {
+        console.log(`🏗️ サンプルモデル読み込み開始: ${fileName}`);
+
+        // 既存のメッシュを削除（グリッドとライト以外）
+        for (let i = this.scene.children.length - 1; i >= 0; i--) {
+            const obj = this.scene.children[i];
+            if (obj.type === 'Mesh' || obj.type === 'Group') {
+                this.scene.remove(obj);
+            }
+        }
+        this.pins = []; // ピンもリセット
+
+        // グリッド再追加（消えていたら）
+        if (!this.scene.children.find(c => c instanceof THREE.GridHelper)) {
+            const gridHelper = new THREE.GridHelper(50, 50, 0xcccccc, 0xeeeeee);
+            this.scene.add(gridHelper);
+        }
+
+        // Snowdon Towers 風のモック作成
+        this.createSnowdonMock();
+    }
+
+    /**
+     * "Snowdon Towers" 風のモックタワー作成
+     */
+    createSnowdonMock() {
+        const matConcrete = new THREE.MeshLambertMaterial({ color: 0xEEEEEE });
+        const matGlass = new THREE.MeshStandardMaterial({
+            color: 0xAADDFF,
+            transparent: true,
+            opacity: 0.6,
+            metalness: 0.1,
+            roughness: 0.1
+        });
+
+        // タワーA: 高層
+        const towerAGeo = new THREE.BoxGeometry(8, 30, 8);
+        const towerA = new THREE.Mesh(towerAGeo, matGlass);
+        towerA.position.set(-10, 15, -5);
+        this.scene.add(towerA);
+
+        // タワーA 骨組み
+        const edgesA = new THREE.EdgesGeometry(towerAGeo);
+        const lineA = new THREE.LineSegments(edgesA, new THREE.LineBasicMaterial({ color: 0x999999 }));
+        lineA.position.copy(towerA.position);
+        this.scene.add(lineA);
+
+        // タワーB: 中層
+        const towerBGeo = new THREE.BoxGeometry(12, 20, 10);
+        const towerB = new THREE.Mesh(towerBGeo, matConcrete);
+        towerB.position.set(5, 10, 5);
+        this.scene.add(towerB);
+
+        // 連結通路
+        const bridgeGeo = new THREE.BoxGeometry(10, 2, 4);
+        const bridge = new THREE.Mesh(bridgeGeo, matConcrete);
+        bridge.position.set(-2, 10, 0);
+        bridge.rotation.y = Math.PI / 4;
+        this.scene.add(bridge);
+
+        console.log("🏔️ Snowdon Towers (Mock) 作成完了");
+    }
+
+    /**
      * ピンを追加（古い互換性用）
      */
     addPin(priority) {
@@ -181,40 +274,91 @@ export class BIMViewer {
     }
 
     /**
-     * データからピンを追加
+     * データからピンを追加 (design_spec v3.1 §3.5対応)
      */
     addPinFromData(data) {
-        const { id, position, priority, title } = data;
+        const { id, position, priority, markup_type } = data;
 
-        // 色の決定
-        const colorMap = {
-            high: 0xD32F2F,     // 赤
-            medium: 0xFBC02D,   // 黄
-            low: 0x2962FF       // 青
-        };
-        const pinColor = colorMap[priority] || colorMap.medium;
-
-        // ピンヘッド
-        const geo = new THREE.SphereGeometry(0.5, 16, 16);
-        const mat = new THREE.MeshBasicMaterial({ color: pinColor });
-        const pin = new THREE.Mesh(geo, mat);
-
-        pin.position.set(position.x, position.y, position.z);
-        pin.userData = { id, title, priority };
-
-        this.scene.add(pin);
-        this.pins.push(pin);
-
-        // ピンの針
-        const lineGeo = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, 0),
-            new THREE.Vector3(0, -2, 0)
-        ]);
-        const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x333333 }));
-        pin.add(line);
-
-        console.log(`📌 ピン追加: ${title || id}`);
+        // ピン用のスプライトを作成
+        const sprite = this.createIconSprite(markup_type, priority);
+        if (sprite) {
+            sprite.position.set(position.x, position.y, position.z);
+            sprite.userData = { id, type: 'pin', data }; // クリック判定用データ
+            this.scene.add(sprite);
+            this.pins.push(sprite);
+        }
     }
+
+    /**
+     * アイコンスプライトを作成
+     * Canvasに絵文字を描画してテクスチャ化
+     */
+    createIconSprite(markupType, priority) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+
+        // 背景円を描画
+        let bgColor = '#FFF59D'; // Default Yellow
+        let borderColor = '#FBC02D';
+
+        // 優先度やタイプに応じた色設定（必要に応じて調整）
+        // ここではアイコンを目立たせるため、白背景＋枠線にする
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.beginPath();
+        ctx.arc(64, 64, 60, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 枠線
+        ctx.strokeStyle = this.getBorderColor(markupType || 'stamp_memo');
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        // アイコン（絵文字）を描画
+        const iconChar = this.getIconChar(markupType || 'stamp_memo');
+        ctx.font = '80px "Not Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#333';
+        ctx.fillText(iconChar, 64, 70); // 微調整
+
+        // テクスチャ作成
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+
+        // スケール調整（3D空間内でのサイズ）
+        sprite.scale.set(3, 3, 1);
+
+        return sprite;
+    }
+
+    getIconChar(type) {
+        switch (type) {
+            case 'stamp_check': return '✅';
+            case 'stamp_question': return '❓';
+            case 'stamp_alert': return '⚠️';
+            case 'stamp_chat': return '💬';
+            case 'stamp_star': return '⭐';
+            case 'stamp_memo': return '📝';
+            default: return '📍';
+        }
+    }
+
+    getBorderColor(type) {
+        switch (type) {
+            case 'stamp_check': return '#4CAF50';
+            case 'stamp_question': return '#FF4081'; // Pink
+            case 'stamp_alert': return '#F44336';
+            case 'stamp_chat': return '#2196F3';
+            case 'stamp_star': return '#FFC107';
+            case 'stamp_memo': return '#795548';
+            default: return '#9E9E9E';
+        }
+    }
+
+
 
     /**
      * カメラ状態を取得
@@ -269,12 +413,105 @@ export class BIMViewer {
         this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+
+        // 軸ラベルのリサイズ処理
+        if (this.axisLabels) {
+            this.axisLabels.onResize(this.container.clientWidth, this.container.clientHeight);
+        }
     }
 
     animate() {
         requestAnimationFrame(this.animate.bind(this));
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
+
+        // 軸ラベルのレンダリング
+        if (this.axisLabels) {
+            this.axisLabels.render();
+        }
+    }
+
+    /**
+     * 測定モード開始 (簡易実装)
+     * design_spec.md v6.1 §4.2 準拠 - mm単位表示
+     */
+    startMeasurementMode() {
+        let measurePoints = [];
+        let measureLine = null;
+        let measureLabel = null;
+
+        const measureClickHandler = (event) => {
+            // マウス座標を正規化
+            const rect = this.container.getBoundingClientRect();
+            this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            // Raycasterで交点を取得
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+
+            if (intersects.length > 0) {
+                const point = intersects[0].point.clone();
+                measurePoints.push(point);
+
+                // 1点目：マーカー表示
+                if (measurePoints.length === 1) {
+                    const geometry = new THREE.SphereGeometry(0.3, 8, 8);
+                    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const marker = new THREE.Mesh(geometry, material);
+                    marker.position.copy(point);
+                    marker.name = 'measureMarker';
+                    this.scene.add(marker);
+
+                    console.log('📏 1点目:', point);
+                }
+
+                // 2点目：距離計算と線表示
+                if (measurePoints.length === 2) {
+                    const start = measurePoints[0];
+                    const end = measurePoints[1];
+                    const distance = start.distanceTo(end);
+                    const distanceMM = (distance * 1000).toFixed(1); // m→mm変換 (I-4: P1)
+
+                    // 2点目のマーカー
+                    const geometry = new THREE.SphereGeometry(0.3, 8, 8);
+                    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const marker = new THREE.Mesh(geometry, material);
+                    marker.position.copy(end);
+                    marker.name = 'measureMarker';
+                    this.scene.add(marker);
+
+                    // 線を描画
+                    const lineGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+                    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+                    measureLine = new THREE.Line(lineGeometry, lineMaterial);
+                    measureLine.name = 'measureLine';
+                    this.scene.add(measureLine);
+
+                    // 距離ラベル（mm単位）
+                    console.log(`📏 距離: ${distanceMM} mm`);
+
+                    // 通知 (design_spec.md §4.2: mm単位)
+                    if (window.showNotification) {
+                        window.showNotification(`📏 距離: ${distanceMM} mm`);
+                    }
+
+                    // 測定終了：イベントリスナー解除
+                    this.container.removeEventListener('click', measureClickHandler);
+                    measurePoints = [];
+
+                    // 5秒後にマーカーと線を削除
+                    setTimeout(() => {
+                        this.scene.children.filter(obj => obj.name === 'measureMarker' || obj.name === 'measureLine')
+                            .forEach(obj => this.scene.remove(obj));
+                    }, 5000);
+                }
+            }
+        };
+
+        // クリックイベントに測定処理を登録
+        this.container.addEventListener('click', measureClickHandler);
+        console.log('📏 測定モード開始: 2点をクリックしてください');
     }
 }
 

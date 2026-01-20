@@ -1,0 +1,83 @@
+/* =========================================
+   P0 緊急修正: タスクバー操作用スタイル
+   Design Spec v11.1 準拠
+   ========================================= */
+
+/* リサイズハンドル (透明だが操作可能) */
+.task-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+    z-index: 10;
+}
+
+.task-resize-handle.top {
+    top: -5px;
+    /* はみ出しクリック領域確保 */
+}
+
+.task-resize-handle.bottom {
+    bottom: -5px;
+}
+
+/* ホバー時にガイド線を表示（オプション） */
+.task-resize-handle:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* タスクバー編集ボタンコンテナ */
+.task-edit-buttons {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 4px;
+    /* ホバー時のみ表示するか、常時表示するかはUX次第だが今回はHover */
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    /* 初期状態ではクリック邪魔しない */
+}
+
+/* タスクバーホバーでボタン表示 */
+.task-bar:hover .task-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 編集ボタン本体 */
+.task-edit-btn,
+.task-delete-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 24px;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.task-delete-btn {
+    color: #D32F2F;
+    /* Tape Red */
+}
+
+.task-edit-btn:hover,
+.task-delete-btn:hover {
+    transform: scale(1.1);
+    background: #fff;
+}
+
+/* ドラッグ中のスタイル */
+.task-bar.dragging {
+    opacity: 0.8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    /* 最前面へ */
+}
