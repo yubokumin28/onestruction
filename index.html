@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>建設DX現場ボード</title>
+  <meta name="description" content="建設現場のアナログ情報を3Dモデル上で管理するDXツール" />
+
+  <!-- Three.js Import Map -->
+
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Yomogi&display=swap"
+    rel="stylesheet">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/examples/jsm/controls/OrbitControls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js",
+      "three/examples/jsm/renderers/CSS2DRenderer": "https://unpkg.com/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js"
+    }
+  }
+  </script>
+  <script type="module" crossorigin src="/onestruction/assets/index-DMeITCbA.js"></script>
+  <link rel="stylesheet" crossorigin href="/onestruction/assets/index-5n-H0qUH.css">
+</head>
+
+<body>
+  <!-- 全体コンテナ (コルクボード) -->
+  <div id="app" class="corkboard">
+
+    <!-- 上部ツールバー (機能統合版) - アイコンを削除 -->
+    <header class="tools-header">
+      <div class="site-title">
+        <h1>現場A: 施工記録ボード</h1>
+      </div>
+
+      <div class="tools-container tool-tray">
+        <button class="tool-btn" data-tool="sticky" title="👤 作業員/機材を配置">
+          <img src="/onestruction/assets/person_icon-DdH48Cyo.png" alt="Person" class="tool-icon">
+        </button>
+        <button class="tool-btn" data-tool="load" title="📄 図面を読み込む">
+          <img src="/onestruction/assets/blueprint_icon-B5zM1hX0.png" alt="Blueprint" class="tool-icon">
+        </button>
+        <button class="tool-btn" data-tool="photo" title="✏️ 編集/画像追加">
+          <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAA5CAYAAABwDahPAAAAAXNSR0IArs4c6QAABQ5JREFUaEPtmUlsW0UYx/9vtZ0maRJnrdOkTXA2CmmTRmKLBFzhgCjiAFyQKsGhUk9w4FIVOHEACYkLm5CQEDcoEkJCICQUSpsSaJy1cdaShSR2vNvxW2bQvJQkVhb7xc+ukN744sN8M9/v//9m5r15HKWU4n/cOBvgPrtnO3CfDYDtgO1AngrYJZSngHmH2w7kLWGeA9gO5Clg3uG2A3lLmOcAtgN5Cph3uO0Ak1BTCDRVM61mWk3jeEWZ6bjdAZY4MDu+DFkWTScSjUUBSUfXmXbTsf8FWAcgmQeIhGNYC6yg1lONBx/uOBKENQBjS5COABAKRREKrYFQakC0d3khioIpEEsAZkYXjwQQDkURjW1A13UDoq6xGm2d5iAsAZg+IkAoFEEyGQHRSQaEt70Vkizl5IQ1ACPMAXPWs+zi0ThiDICQTAhPNbwduUFYAuAf+RuSydplAOxOcCOwAVUhoOynE6OUwAFVdaXoOtuW1QVrAHx3TS++bJmJkoCT3vps3ay5VpkaLgxAU1uxAG4vZDgQjoRh9s7Y5XTB6XRuK84caGpvKI4Dd/5iALwxWSKZgH/Gb/zfvvbedQF+0FV4WWkZvC0PGHFS8B+wJXWiv684AJMMQNgCyLe5v/0AjgkfeF6CfOlN8I8+deiQliziyT/nIewCiEQjpkuIlU/T1+9AXGHqSxBEGUJ5Bbgr7wHu2gMhrAEYmtsGYCU0PTd9YAntl4lT38Sp4xSVc7OoGRqAwAB4CVxVNSjVwL3/aWEBJv6YzXDATBkJwRmEKQFX4YEsutD0zUcoX5yHcRiwVVRaBvVkE6Q3ru47rCUOjDMAfmcNRGNbJZTt25V76Qbc079g9aEXobf0QpaccOgU9V++Czm4di9hCrX/SUivXiocwNgtBsAUY7tQHLMLc5mT7bMLdQcH0BD0Q1gLQhdLsPHC2+A9HYYLfHAJVV9chZhKIN19Do7LbxW2hMZuzWwD5FI+tYMfQl72gw9FAAJQwkEvqUXq4sfQ5VJsJjZBVxfQpPohPXOh8LvQ2OA0+HsOHDabmFhDje9zyGsL4FIJcBC2Si0NUBVQPT0IPHsFajQMh1NByyPZX3IsWQOjN3cA2C7kGx/esws168voVXxwxVYh6CrAcYb6RKEgKQqicVBoJeLnLyDe/TgkWYS3uzmroZYAjNz0g2cJHdAq5r5H+dIA5OQ6BI49bXKgrHQUCj2lg2xySJMqJLz9iD723NZpLItoO3uqSAA3GMD+c9WNf4aS0ARkJQROFMCBByUUhD1CpzToSSDF1SPc8zxS3p1HBwPg3OniAPh+3wsgqjHUjX8CV/IuJD0OThTB8QIoIaBpproGLUGR5JsR6L8I1d2YkazkENFeLIDh61N7HHCGhnBi6Ue4kvPgRAkcxxsvLFTVQFIKtDgQLzmD1SdeA3Ee26M0A+joaSmOA8PX7xjn5u7mWP8VpSSN+sDPEIgC6BqIooBuqtCSQND9NAJ9Lx+YIAPo7G0tEsBvk3sAnCs/GErXHCuFe/U7UCUNorDkZay0vIRoS/+hyUkOCZ3niwRweyATYH12FCXhKVRIThCFh8cjonzuK6S1Six2vY6U25tVWYdLRkdvkUpoyjePZCS1ndTgtWsY/GkMl1/pA1EEUIVH/WkVgfpeaCVVWZMXRB6NrQ2orC3P2teScyDrLAXsYAMUUNychrYdyEmmAnayHSiguDkNbTuQk0wF7PQvwA3YdJJ7JS4AAAAASUVORK5CYII=" alt="Edit" class="tool-icon">
+        </button>
+        <button class="tool-btn" data-tool="settings" title="⚙️ 設定">⚙️</button>
+        <!-- 隠しファイル入力 -->
+        <input type="file" id="file-input" accept=".rvt,.ifc" style="display: none;" />
+      </div>
+      <button class="menu-btn">☰</button>
+
+    </header>
+
+    <!-- メインエリア -->
+    <main class="main-content">
+      <!-- 3Dビューア (白い紙) -->
+      <div class="paper-canvas-container">
+        <div class="tape top-left"></div>
+        <div class="tape top-right"></div>
+        <div class="tape bottom-left"></div>
+        <div class="tape bottom-right"></div>
+
+        <div id="three-canvas-container"></div>
+
+        <!-- デフォルト付箋2枚 -->
+        <div class="sticky-note" style="top: 20px; right: 20px; width: 150px; height: 120px; background: #FFF9C4;">
+          <div class="sticky-header">
+            <button class="settings-handle" title="設定">⚙️</button>
+            <button class="delete-btn" title="削除">×</button>
+          </div>
+          <textarea placeholder="メモ" style="background: transparent;">📌 安全ミーティング</textarea>
+        </div>
+
+        <div class="sticky-note" style="top: 150px; right: 20px; width: 150px; height: 120px; background: #F8BBD0;">
+          <div class="sticky-header">
+            <button class="settings-handle" title="設定">⚙️</button>
+            <button class="delete-btn" title="削除">×</button>
+          </div>
+          <textarea placeholder="メモ" style="background: transparent;">📌 ゾーン配筋検査請</textarea>
+        </div>
+
+        <!-- オーバーレイUI (3D内の操作) -->
+        <div class="canvas-overlay">
+          <!-- ビュー切替ボタン -->
+          <div class="view-controls">
+            <button class="view-btn active" data-view="overview" title="斜め上からの俯瞰ビュー">全体図</button>
+            <button class="view-btn" data-view="plan" title="真上からの垂直投影">平面図</button>
+            <button class="view-btn" data-view="section" title="横からの側面ビュー">縦断図</button>
+          </div>
+        </div>
+
+        <!-- ポップアップ表示エリア -->
+        <div id="popup-container"></div>
+
+        <!-- RVTロード画面 (v3.2追加) -->
+        <div id="loading-overlay" class="hidden">
+          <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Revitファイルを読み込んでいます...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- リサイズバー -->
+      <div id="resize-bar" class="resize-bar"></div>
+
+      <!-- 右サイドバー: マルチレーン型タイムスケジュール -->
+      <aside class="notebook-sidebar schedule-panel">
+        <div class="notebook-binding"></div>
+        <h2>本日のスケジュール</h2>
+        <!-- 工区切り替えタブ -->
+        <div class="zone-tabs">
+          <button class="zone-tab active" data-zone="A" contenteditable="true">A工区</button>
+          <button class="zone-tab" data-zone="B" contenteditable="true">B工区</button>
+          <button class="zone-tab" data-zone="C" contenteditable="true">C工区</button>
+        </div>
+        <div class="schedule-grid">
+          <!-- ヘッダー行 -->
+          <div class="schedule-header" id="schedule-header">
+            <div class="time-header">時刻</div>
+            <!-- JSによりレーンヘッダー追加 -->
+            <button id="add-lane-btn" class="add-lane-btn" title="列を追加">＋</button>
+            <div class="lane-header" contenteditable="true">大工</div>
+            <div class="lane-header" contenteditable="true">鉄筋屋</div>
+            <div class="lane-header" contenteditable="true">生コン</div>
+            <div class="lane-header" contenteditable="true">電気工</div>
+          </div>
+          <!-- 時間軸とマルチレーン -->
+          <div class="schedule-body" id="schedule-body">
+            <!-- 時刻軸 (15分刻み) -->
+            <div class="time-column">
+              <!-- 08:00台 -->
+              <div class="time-cell">08:00</div>
+              <div class="time-cell sub-time">08:15</div>
+              <div class="time-cell sub-time">08:30</div>
+              <div class="time-cell sub-time">08:45</div>
+              <!-- 09:00台 -->
+              <div class="time-cell">09:00</div>
+              <div class="time-cell sub-time">09:15</div>
+              <div class="time-cell sub-time">09:30</div>
+              <div class="time-cell sub-time">09:45</div>
+              <!-- 10:00台 -->
+              <div class="time-cell">10:00</div>
+              <div class="time-cell sub-time">10:15</div>
+              <div class="time-cell sub-time">10:30</div>
+              <div class="time-cell sub-time">10:45</div>
+              <!-- 11:00台 -->
+              <div class="time-cell">11:00</div>
+              <div class="time-cell sub-time">11:15</div>
+              <div class="time-cell sub-time">11:30</div>
+              <div class="time-cell sub-time">11:45</div>
+              <!-- 12:00台 -->
+              <div class="time-cell">12:00</div>
+              <div class="time-cell sub-time">12:15</div>
+              <div class="time-cell sub-time">12:30</div>
+              <div class="time-cell sub-time">12:45</div>
+              <!-- 13:00台 -->
+              <div class="time-cell">13:00</div>
+              <div class="time-cell sub-time">13:15</div>
+              <div class="time-cell sub-time">13:30</div>
+              <div class="time-cell sub-time">13:45</div>
+              <!-- 14:00台 -->
+              <div class="time-cell">14:00</div>
+              <div class="time-cell sub-time">14:15</div>
+              <div class="time-cell sub-time">14:30</div>
+              <div class="time-cell sub-time">14:45</div>
+              <!-- 15:00台 -->
+              <div class="time-cell">15:00</div>
+              <div class="time-cell sub-time">15:15</div>
+              <div class="time-cell sub-time">15:30</div>
+              <div class="time-cell sub-time">15:45</div>
+              <!-- 16:00台 -->
+              <div class="time-cell">16:00</div>
+              <div class="time-cell sub-time">16:15</div>
+              <div class="time-cell sub-time">16:30</div>
+              <div class="time-cell sub-time">16:45</div>
+              <!-- 17:00 -->
+              <div class="time-cell">17:00</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+  </div>
+
+  <!-- 入力モーダル (非表示) -->
+  <div id="input-modal" class="modal hidden">
+    <div class="modal-content post-it-large">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">📝 指摘事項メモ</h2>
+
+      <!-- スタンプ選択 -->
+      <div class="stamp-selector">
+        <button class="stamp-btn" data-stamp="stamp_check" title="完了">✅</button>
+        <button class="stamp-btn" data-stamp="stamp_question" title="疑問">❓</button>
+        <button class="stamp-btn active" data-stamp="stamp_memo" title="メモ">📝</button>
+        <button class="stamp-btn" data-stamp="stamp_alert" title="注意">⚠️</button>
+        <button class="stamp-btn" data-stamp="stamp_chat" title="相談">💬</button>
+        <button class="stamp-btn" data-stamp="stamp_star" title="重要">⭐</button>
+      </div>
+
+      <div class="photo-area">
+        <button class="camera-btn">📷 写真を撮る</button>
+      </div>
+
+      <div class="input-area">
+        <div class="quick-tags">
+          <button class="tag">【是正】</button>
+          <button class="tag">【確認】</button>
+          <button class="tag">【KY】</button>
+          <button class="tag">【安全】</button>
+        </div>
+        <textarea placeholder="手書きメモを残す感覚で入力してください..."></textarea>
+      </div>
+
+      <div class="priority-selector">
+        <label><input type="radio" name="priority" value="high"> <span class="marker red">緊急</span></label>
+        <label><input type="radio" name="priority" value="medium" checked> <span class="marker yellow">通常</span></label>
+        <label><input type="radio" name="priority" value="low"> <span class="marker blue">低</span></label>
+      </div>
+
+      <button class="save-btn stamp-effect">保存する！</button>
+    </div>
+  </div>
+
+  <!-- 設定パネル -->
+  <div id="settings-panel" class="modal hidden">
+    <div class="modal-content settings-content">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">⚙️ 設定</h2>
+      <div class="setting-item">
+        <label>付箋フォント:</label>
+        <select id="font-select">
+          <option value="'Yomogi', cursive">Yomogi (手書き風)</option>
+          <option value="'MS Gothic', monospace">MS Gothic</option>
+          <option value="'Noto Sans JP', sans-serif">Noto Sans JP</option>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>フォントサイズ:</label>
+        <select id="font-size-select">
+          <option value="12px">12px</option>
+          <option value="16px" selected>16px</option>
+          <option value="20px">20px</option>
+          <option value="24px">24px</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 付箋作成モーダル -->
+  <div id="sticky-modal" class="modal hidden">
+    <div class="modal-content sticky-create-modal">
+      <button class="close-btn">×</button>
+      <h2 class="handwritten">📌 新しい付箋</h2>
+      <div class="color-picker">
+        <label>色を選択:</label>
+        <div class="color-options">
+          <span class="color-option yellow active" data-color="yellow"></span>
+          <span class="color-option pink" data-color="pink"></span>
+          <span class="color-option blue" data-color="blue"></span>
+          <span class="color-option green" data-color="green"></span>
+        </div>
+      </div>
+      <div class="input-area">
+        <textarea id="new-sticky-text" placeholder="メモを入力..."></textarea>
+      </div>
+      <button id="create-sticky-btn" class="save-btn">付箋を追加</button>
+    </div>
+  </div>
+
+</body>
+
+</html>
