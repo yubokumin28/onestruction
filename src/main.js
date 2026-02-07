@@ -60,6 +60,9 @@ const initApp = async () => {
 
     // Initialize Features (Merged from duplicate listener)
     initScheduleApp();
+    initStickyNotes();
+    initGridScrollSync();
+    initResizeBar();
 
     // Issue一覧を読み込み
     await loadIssues();
@@ -494,19 +497,29 @@ let scheduleData = {
     'A': {
         lanes: ['大工', '鉄筋屋', '生コン', '電気工'],
         tasks: [
-            { laneIndex: 0, top: 0, height: 320, text: '作業中' },
-            { laneIndex: 1, top: 0, height: 480, text: '作業中' },
-            { laneIndex: 2, top: 0, height: 480, text: '作業中' },
-            { laneIndex: 3, top: 0, height: 480, text: '作業中' }
+            { laneIndex: 0, top: 0, height: 160, text: '作業中', color: 'carpenter' },
+            { laneIndex: 1, top: 0, height: 160, text: '作業中', color: 'rebar' },
+            { laneIndex: 2, top: 0, height: 160, text: '作業中', color: 'concrete' },
+            { laneIndex: 3, top: 0, height: 160, text: '作業中', color: 'electrical' }
         ]
     },
     'B': {
-        lanes: [],
-        tasks: []
+        lanes: ['大工', '鉄筋屋', '生コン', '電気工'],
+        tasks: [
+            { laneIndex: 0, top: 0, height: 160, text: '作業中', color: 'carpenter' },
+            { laneIndex: 1, top: 0, height: 160, text: '作業中', color: 'rebar' },
+            { laneIndex: 2, top: 0, height: 160, text: '作業中', color: 'concrete' },
+            { laneIndex: 3, top: 0, height: 160, text: '作業中', color: 'electrical' }
+        ]
     },
     'C': {
-        lanes: ['検査'],
-        tasks: []
+        lanes: ['大工', '鉄筋屋', '生コン', '電気工'],
+        tasks: [
+            { laneIndex: 0, top: 0, height: 160, text: '作業中', color: 'carpenter' },
+            { laneIndex: 1, top: 0, height: 160, text: '作業中', color: 'rebar' },
+            { laneIndex: 2, top: 0, height: 160, text: '作業中', color: 'concrete' },
+            { laneIndex: 3, top: 0, height: 160, text: '作業中', color: 'electrical' }
+        ]
     }
 };
 
@@ -594,26 +607,40 @@ document.addEventListener('mouseup', (e) => {
             dragItem.classList.remove('dragging-horizontal');
 
             // タスクバーの位置をデータに反映
-            const newTop = parseInt(dragItem.style.top);
+            let newTop = parseInt(dragItem.style.top);
             const taskData = dragItem._taskData;
 
             if (taskData) {
-                taskData.top = newTop;
-
                 // 列移動の処理
-                const dropLaneIndex = detectLaneFromX(e.clientX);
-                if (dropLaneIndex !== null && dropLaneIndex !== dragOriginalLaneIndex) {
-                    // 列を移動
-                    moveTaskToLane(dragItem, taskData, dropLaneIndex);
-                    const laneName = scheduleData[currentZone].lanes[dropLaneIndex];
-                    window.showNotification(`📋 タスクを「${laneName}」列に移動しました`);
-                } else {
-                    // 時刻のみ変更
-                    const newTime = topToTime(newTop);
-                    window.showNotification(`📅 タスク時刻を ${newTime} に変更しました`);
+                let dropLaneIndex = detectLaneFromX(e.clientX);
+                // レーン外ドロップ、または変更なしの場合は元のレーン
+                if (dropLaneIndex === null) {
+                    dropLaneIndex = dragOriginalLaneIndex;
                 }
 
-                saveData(); // データ保存
+                // 衝突判定
+                if (checkCollision(dropLaneIndex, newTop, taskData.height, taskData)) {
+                    // 衝突する場合は元に戻す
+                    window.showNotification('⚠️ 他のタスクと重なるため移動できません');
+                    renderSchedule(); // 再描画してリセット
+                } else {
+                    // 衝突しない場合のみ更新
+                    let isLaneChanged = (dropLaneIndex !== dragOriginalLaneIndex);
+
+                    if (isLaneChanged) {
+                        moveTaskToLane(dragItem, taskData, dropLaneIndex);
+                        taskData.top = newTop; // 高さも更新
+                        const laneName = scheduleData[currentZone].lanes[dropLaneIndex];
+                        window.showNotification(`📋 タスクを「${laneName}」列に移動しました`);
+                    } else {
+                        // 時間のみ変更
+                        taskData.top = newTop;
+                        const newTime = topToTime(newTop);
+                        window.showNotification(`📅 タスク時刻を ${newTime} に変更しました`);
+                    }
+
+                    saveData(); // データ保存
+                }
             }
 
             // ハイライトをクリア
@@ -804,7 +831,7 @@ function setupViewControls() {
             console.log(`📷 View change: ${viewType}`);
             switch (viewType) {
                 case 'overview':
-                    viewer.setCameraPosition({ x: 20, y: 20, z: 20 }, { x: 0, y: 0, z: 0 });
+                    viewer.setCameraPosition({ x: 50, y: 40, z: 50 }, { x: 0, y: 10, z: 0 });
                     break;
                 case 'plan':
                     viewer.setCameraPosition({ x: 0, y: 50, z: 0 }, { x: 0, y: 0, z: 0 });
@@ -910,8 +937,16 @@ function renderSchedule() {
                 <button class="task-icon-btn delete-icon" title="削除">×</button>
             `;
 
+            // リサイズハンドルを追加
+            const resizeHandleTop = document.createElement('div');
+            resizeHandleTop.className = 'task-resize-handle top';
+            const resizeHandleBottom = document.createElement('div');
+            resizeHandleBottom.className = 'task-resize-handle bottom';
+
+            bar.appendChild(resizeHandleTop);
             bar.appendChild(taskText);
             bar.appendChild(taskIcons);
+            bar.appendChild(resizeHandleBottom);
             bar.title = `${name}: ${formatTime(task.top)}-${formatTime(task.top + task.height)}`;
 
             // データをDOM要素に紐付け
@@ -992,6 +1027,160 @@ function setupTaskBar(bar) {
 
     // CSSでcursor: grabを指定することを推奨
     bar.style.cursor = 'grab';
+
+    // リサイズハンドルのイベント
+    const topHandle = bar.querySelector('.task-resize-handle.top');
+    const bottomHandle = bar.querySelector('.task-resize-handle.bottom');
+
+    if (topHandle) {
+        topHandle.addEventListener('mousedown', (e) => {
+            startResize(e, bar, 'top');
+        });
+    }
+
+    if (bottomHandle) {
+        bottomHandle.addEventListener('mousedown', (e) => {
+            startResize(e, bar, 'bottom');
+        });
+    }
+}
+
+let isResizingTask = false;
+let resizeTarget = null;
+let resizeDirection = null; // 'top' | 'bottom'
+let resizeStartY = 0;
+let resizeStartTop = 0;
+let resizeStartHeight = 0;
+
+function startResize(e, bar, direction) {
+    if (!bar._taskData) return;
+
+    e.stopPropagation(); // ドラッグ移動と競合しないように
+    isResizingTask = true;
+    resizeTarget = bar;
+    resizeDirection = direction;
+    resizeStartY = e.clientY;
+    resizeStartTop = bar._taskData.top;
+    resizeStartHeight = bar._taskData.height;
+
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+}
+
+// リサイズ中の処理 (mousemove)
+document.addEventListener('mousemove', (e) => {
+    if (!isResizingTask || !resizeTarget) return;
+
+    const deltaY = e.clientY - resizeStartY;
+    let newTop = resizeStartTop;
+    let newHeight = resizeStartHeight;
+
+    // 40pxグリッドにスナップ
+    const snappedDelta = Math.round(deltaY / 40) * 40;
+
+    if (resizeDirection === 'bottom') {
+        newHeight = resizeStartHeight + snappedDelta;
+        // 最小高さ制限 (40px = 15min)
+        if (newHeight < 40) newHeight = 40;
+    } else if (resizeDirection === 'top') {
+        newTop = resizeStartTop + snappedDelta;
+        newHeight = resizeStartHeight - snappedDelta;
+
+        // 最小高さ制限
+        if (newHeight < 40) {
+            newTop = resizeStartTop + (resizeStartHeight - 40);
+            newHeight = 40;
+        }
+    }
+
+    // 画面外制限 (0 - 2160px)
+    if (newTop < 0) {
+        newHeight += newTop; // 高さを調整して上端に合わせる
+        newTop = 0;
+    }
+    if (newTop + newHeight > 2160) {
+        newHeight = 2160 - newTop;
+    }
+
+    // 仮適用して衝突チェック
+    const laneIndex = resizeTarget._taskData.laneIndex;
+    const isColliding = checkCollision(laneIndex, newTop, newHeight, resizeTarget._taskData);
+
+    if (!isColliding) {
+        resizeTarget.style.top = newTop + 'px';
+        resizeTarget.style.height = newHeight + 'px';
+
+        // ツールチップ更新
+        resizeTarget.title = formatTimeRange(newTop, newHeight);
+    } else {
+        // 衝突時は赤枠などで警告してもいいが、今回は単純に動かないようにする
+        // (または、直前の有効な位置で止める実装も可能だがシンプルに)
+    }
+});
+
+// リサイズ終了 (mouseup)
+document.addEventListener('mouseup', () => {
+    if (isResizingTask && resizeTarget) {
+        // データを確定
+        const currentTop = parseInt(resizeTarget.style.top);
+        const currentHeight = parseInt(resizeTarget.style.height);
+
+        // 最終的な衝突チェック (念のため)
+        const laneIndex = resizeTarget._taskData.laneIndex;
+        if (!checkCollision(laneIndex, currentTop, currentHeight, resizeTarget._taskData)) {
+            resizeTarget._taskData.top = currentTop;
+            resizeTarget._taskData.height = currentHeight;
+            saveData();
+            window.showNotification(`📏 時間を変更しました: ${formatTimeRange(currentTop, currentHeight)}`);
+        } else {
+            // 万が一衝突状態で離した場合は元に戻す（レンダリングし直し）
+            renderSchedule();
+            window.showNotification('⚠️ 他のタスクと重なるため変更できませんでした');
+        }
+
+        // クリーンアップ
+        isResizingTask = false;
+        resizeTarget = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    }
+});
+
+/**
+ * 時間範囲フォーマット用ヘルパー
+ */
+function formatTimeRange(top, height) {
+    return `${formatTime(top)} - ${formatTime(top + height)}`;
+}
+
+/**
+ * 衝突判定
+ * @param {number} laneIndex - チェックする列
+ * @param {number} newTop - 新しいTop位置
+ * @param {number} newHeight - 新しい高さ
+ * @param {Object} excludeTask - チェックから除外する自分自身のタスクデータ
+ * @returns {boolean} - 衝突していれば true
+ */
+function checkCollision(laneIndex, newTop, newHeight, excludeTask) {
+    const data = scheduleData[currentZone];
+    if (!data) return false;
+
+    const newBottom = newTop + newHeight;
+
+    // 同じ列のタスクを取得
+    const laneTasks = data.tasks.filter(t => t.laneIndex === laneIndex && t !== excludeTask);
+
+    for (const task of laneTasks) {
+        const taskBottom = task.top + task.height;
+
+        // 重なり判定
+        // 新しいタスクの下端 > 既存タスクの上端 AND 新しいタスクの上端 < 既存タスクの下端
+        if (newBottom > task.top && newTop < taskBottom) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -1259,34 +1448,10 @@ function setupStickyNote(note) {
 // アプリケーション初期化（DOMContentLoaded）
 // ==========================================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('🚀 アプリケーション起動');
-
-    // 1. BIMViewer初期化
-    const container = document.getElementById('three-canvas-container'); // 修正: bim-canvas → three-canvas-container
-    if (!container) {
-        console.error('❌ 3Dビューアコンテナが見つかりません');
-        return;
-    }
-    const viewer = new BIMViewer(container);
-    await viewer.init();
-    window.viewer = viewer; // グローバル変数として保存（デバッグ用）
-
-    // 2. UIManager初期化
-    const uiManager = new UIManager();
-    window.uiManager = uiManager;
-
-    // 3. インタラクション設定（ツールバー、ビュー切り替え等）
-    setupInteractions(viewer, uiManager);
-
-    // 4. 付箋機能初期化
-    initStickyNotes();
-
-    // 5. スケジュール機能初期化（工区タブ、レンダリング、ビュー切り替え）
-    initScheduleApp();
-
-    console.log('✅ 初期化完了');
-});
+// ==========================================================================
+// (旧) 重複していたDOMContentLoadedリスナーを削除しました (v9.0クリーンアップ)
+// 初期化はinitApp()関数（72-76行目）で実行されます
+// ==========================================================================
 
 /**
  * 通知を表示 (Global公開)
@@ -1540,13 +1705,7 @@ function initResizeBar() {
 // ============================================================
 // 初期化処理
 // ============================================================
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initGridScrollSync();
-        initResizeBar();
-    });
-} else {
-    // DOMContentLoadedが既に発火している場合
-    initGridScrollSync();
-    initResizeBar();
-}
+// ============================================================
+// (旧) 重複していたDOMContentLoadedリスナーを削除しました (v9.0クリーンアップ)
+// initGridScrollSync()とinitResizeBar()はinitScheduleApp()内で呼び出されます
+// ============================================================

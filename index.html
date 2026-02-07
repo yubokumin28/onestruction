@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Yomogi&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./style.css?v=9.1" />
 </head>
 
 <body>
@@ -37,9 +37,15 @@
       </div>
 
       <div class="tools-container tool-tray">
-        <button class="tool-btn" data-tool="sticky" title="📌 付箋を追加">📌</button>
-        <button class="tool-btn" data-tool="load" title="📄 図面を読み込む">📄</button>
-        <button class="tool-btn" data-tool="photo" title="📷 画像を追加">📷</button>
+        <button class="tool-btn" data-tool="sticky" title="👤 作業員/機材を配置">
+          <img src="assets/icons/person_icon.png" alt="Person" class="tool-icon">
+        </button>
+        <button class="tool-btn" data-tool="load" title="📄 図面を読み込む">
+          <img src="assets/icons/blueprint_icon.png" alt="Blueprint" class="tool-icon">
+        </button>
+        <button class="tool-btn" data-tool="photo" title="✏️ 編集/画像追加">
+          <img src="assets/icons/custom_edit_icon.png" alt="Edit" class="tool-icon">
+        </button>
         <button class="tool-btn" data-tool="settings" title="⚙️ 設定">⚙️</button>
         <!-- 隠しファイル入力 -->
         <input type="file" id="file-input" accept=".rvt,.ifc" style="display: none;" />
@@ -123,7 +129,7 @@
             <div class="lane-header" contenteditable="true">電気工</div>
           </div>
           <!-- 時間軸とマルチレーン -->
-          <div class="schedule-body">
+          <div class="schedule-body" id="schedule-body">
             <!-- 時刻軸 (15分刻み) -->
             <div class="time-column">
               <!-- 08:00台 -->
@@ -173,22 +179,6 @@
               <div class="time-cell sub-time">16:45</div>
               <!-- 17:00 -->
               <div class="time-cell">17:00</div>
-            </div>
-            <!-- 大工レーン -->
-            <div class="lane carpenter">
-              <div class="task-bar" style="top: 0; height: 320px;" title="大工: 8:00-10:00">作業中</div>
-            </div>
-            <!-- 鉄筋屋レーン -->
-            <div class="lane rebar">
-              <div class="task-bar" style="top: 160px; height: 480px;" title="鉄筋屋: 9:00-12:00">作業中</div>
-            </div>
-            <!-- 生コンレーン -->
-            <div class="lane concrete">
-              <div class="task-bar" style="top: 640px; height: 480px;" title="生コン屋: 12:00-15:00">作業中</div>
-            </div>
-            <!-- 電気工レーン -->
-            <div class="lane electrical">
-              <div class="task-bar" style="top: 640px; height: 800px;" title="電気工: 12:00-17:00">作業中</div>
             </div>
           </div>
         </div>

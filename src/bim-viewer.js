@@ -27,6 +27,17 @@ export class BIMViewer {
 
         // コールバック
         this.onClickPosition = null;  // 3Dクリック時のコールバック
+
+        // ドラッグ操作用の状態変数
+        this.isDragging = false;
+        this.draggedPin = null;
+        this.dragPlane = new THREE.Plane();
+        this.dragOffset = new THREE.Vector3();
+
+        // イベントハンドラのバインド（削除できるように）
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
     }
 
     init() {
@@ -35,6 +46,7 @@ export class BIMViewer {
         this.setupControls();
         this.setupAxisLabels(); // Phase 3 (P1)
         this.setupClickHandler();
+        this.setupDragHandler(); // ドラッグハンドラ設定を追加
         this.loadModel();
         this.animate();
 
@@ -51,8 +63,8 @@ export class BIMViewer {
             0.1,
             1000
         );
-        this.camera.position.set(20, 20, 20);
-        this.camera.lookAt(0, 0, 0);
+        this.camera.position.set(40, 30, 40); // より遠くから全体を見渡せる位置に変更
+        this.camera.lookAt(0, 10, 0); // 建物の中心付近を見る
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
@@ -142,6 +154,85 @@ export class BIMViewer {
                 }
             }
         });
+    }
+
+    /**
+     * ドラッグ操作のイベントリスナーを設定
+     */
+    setupDragHandler() {
+        const domElement = this.renderer.domElement;
+        // Pointer events for better support
+        domElement.addEventListener('pointerdown', this.onPointerDown);
+        domElement.addEventListener('pointermove', this.onPointerMove);
+        window.addEventListener('pointerup', this.onPointerUp);
+    }
+
+    onPointerDown(event) {
+        // 左クリックのみ
+        if (event.button !== 0) return;
+
+        event.preventDefault();
+
+        // マウス座標更新
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // ピンとの交差判定
+        const intersects = this.raycaster.intersectObjects(this.pins, false);
+
+        if (intersects.length > 0) {
+            // ドラッグ開始
+            this.isDragging = true;
+            this.controls.enabled = false; // OrbitControlsを一時無効化
+            this.draggedPin = intersects[0].object;
+
+            // ドラッグ平面を設定（ピンの現在のY座標を持つ水平面）
+            // カメラ方向に向けるビルボード平面の方が操作しやすい場合もあるが、建設では床面移動が直感的
+            const pinPos = this.draggedPin.position;
+            this.dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), pinPos);
+
+            // インタラクション点とオブジェクト中心のオフセットを計算
+            if (this.raycaster.ray.intersectPlane(this.dragPlane, this.dragOffset)) {
+                this.dragOffset.sub(pinPos);
+            }
+        }
+    }
+
+    onPointerMove(event) {
+        if (!this.isDragging || !this.draggedPin) return;
+
+        event.preventDefault();
+
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // 平面との交点を計算して移動
+        const intersectPoint = new THREE.Vector3();
+        if (this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint)) {
+            // オフセットを適用して、クリック位置とオブジェクトの相対位置を維持
+            const newPos = intersectPoint.sub(this.dragOffset);
+            this.draggedPin.position.copy(newPos);
+
+            // データも更新（必要なら）
+            if (this.draggedPin.userData.data) {
+                this.draggedPin.userData.data.position = { x: newPos.x, y: newPos.y, z: newPos.z };
+            }
+        }
+    }
+
+    onPointerUp(event) {
+        if (this.isDragging) {
+            console.log("🛑 Drag End");
+            this.isDragging = false;
+            this.draggedPin = null;
+            this.controls.enabled = true; // OrbitControlsを有効化
+        }
     }
 
     async loadModel() {
